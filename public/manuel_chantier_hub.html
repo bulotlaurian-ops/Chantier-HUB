@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chantier Hub — Manuel utilisateur</title>
+<style>
+  :root{
+    --ink:#111;        /* texte principal */
+    --ink-soft:#444;   /* texte secondaire */
+    --line:#111;       /* filets */
+    --grey:#666;
+    --box:#f5f5f5;     /* encadrés / placeholders */
+    --box-line:#ccc;
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body{
+    font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color:var(--ink);
+    line-height:1.55;
+    font-size:11pt;
+    margin:0;
+    background:#fff;
+  }
+  .wrap{ max-width:820px; margin:0 auto; padding:32px 28px 60px; }
+
+  /* En-tête de marque */
+  .brand{ border-bottom:2px solid var(--line); padding-bottom:14px; margin-bottom:28px; display:flex; justify-content:space-between; align-items:flex-end; }
+  .brand .name{ font-size:22pt; font-weight:300; letter-spacing:-.5px; }
+  .brand .name b{ font-weight:600; }
+  .brand .meta{ text-align:right; font-size:9.5pt; color:var(--grey); }
+
+  h1.doc{ font-size:26pt; font-weight:300; letter-spacing:-.5px; margin:6px 0 2px; }
+  .subtitle{ color:var(--ink-soft); font-size:12pt; margin-bottom:24px; }
+
+  h2{ font-size:16pt; font-weight:600; letter-spacing:-.3px; margin:0 0 4px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+  h2 .num{ display:inline-block; min-width:1.6em; }
+  h3{ font-size:12.5pt; font-weight:600; margin:22px 0 6px; }
+  h4{ font-size:11pt; font-weight:600; margin:16px 0 4px; }
+  p{ margin:8px 0; }
+  ul,ol{ margin:8px 0 8px 4px; padding-left:22px; }
+  li{ margin:4px 0; }
+  strong{ font-weight:600; }
+  code{ background:var(--box); border:1px solid var(--box-line); border-radius:4px; padding:.5px 5px; font-size:10pt; font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; }
+
+  a{ color:var(--ink); text-decoration:underline; text-underline-offset:2px; }
+
+  /* Table des matières */
+  .toc{ border:1px solid var(--line); border-radius:8px; padding:18px 22px; margin:10px 0 8px; }
+  .toc h2{ border:0; padding:0; margin:0 0 10px; font-size:13pt; }
+  .toc ol{ list-style:none; padding:0; margin:0; counter-reset:toc; }
+  .toc li{ counter-increment:toc; display:flex; justify-content:space-between; gap:10px; padding:3px 0; border-bottom:1px dotted var(--box-line); }
+  .toc li::before{ content:counter(toc) ". "; font-weight:600; margin-right:6px; }
+  .toc a{ text-decoration:none; flex:1; }
+  .toc .pg{ color:var(--grey); }
+  .toc li.appendix{ counter-increment:none; }
+  .toc li.appendix::before{ content:"★ "; }
+
+  /* Sections : nouvelle page à l'impression */
+  section.section{ page-break-before:always; padding-top:6px; }
+
+  /* Encadrés */
+  .note,.tip{ border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin:14px 0; background:var(--box); break-inside:avoid; page-break-inside:avoid; }
+  .note .lbl,.tip .lbl{ font-weight:700; text-transform:uppercase; letter-spacing:.6px; font-size:8.5pt; display:inline-block; margin-bottom:4px; padding:1px 7px; border-radius:4px; }
+  .note{ border-left:5px solid var(--ink); }
+  .tip{ border-left:5px solid var(--grey); background:#fafafa; }
+  .note .lbl{ background:var(--ink); color:#fff; }
+  .tip .lbl{ background:#fff; color:var(--ink); border:1px solid var(--ink); }
+  .note p,.tip p{ margin:4px 0; }
+
+
+  /* Tableaux */
+  table{ border-collapse:collapse; width:100%; margin:12px 0; font-size:10pt; break-inside:avoid; }
+  th,td{ border:1px solid var(--box-line); padding:7px 9px; text-align:left; vertical-align:top; }
+  th{ background:var(--box); font-weight:600; }
+
+  .lead{ font-size:11.5pt; color:var(--ink-soft); }
+  .kbd{ border:1px solid var(--ink); border-radius:4px; padding:0 6px; font-size:9.5pt; }
+  .pill{ display:inline-block; border:1px solid var(--ink); border-radius:999px; padding:0 8px; font-size:8.5pt; font-weight:600; }
+  .footer-note{ margin-top:40px; padding-top:12px; border-top:1px solid var(--box-line); color:var(--grey); font-size:9pt; }
+
+  @page{ size:A4; margin:16mm 15mm 18mm; }
+  @media print{
+    .wrap{ max-width:none; padding:0; }
+    a{ text-decoration:none; }
+    .toc{ break-inside:avoid; }
+    h2,h3,h4{ break-after:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ====================== COUVERTURE + TOC (page 1) ====================== -->
+  <div class="brand">
+    <div class="name">Artisan Pro <b>Hub</b></div>
+    <div class="meta">Manuel utilisateur<br>Mis à jour le 24 juin 2026<br>Version 1.1</div>
+  </div>
+
+  <h1 class="doc">Manuel utilisateur</h1>
+  <p class="subtitle">Plateforme de gestion interne — Chantier Hub (Suisse romande)</p>
+
+  <p class="lead">Ce document décrit l'utilisation quotidienne de <strong>Chantier Hub</strong>, l'application de gestion
+  des devis, chantiers, heures, factures et marges du groupe. Il s'adresse aux trois profils d'utilisateurs
+  (administrateur, conducteur de travaux, ouvrier) et peut être imprimé en PDF (Chrome → Fichier → Imprimer →
+  Enregistrer au format PDF, format A4).</p>
+
+  <nav class="toc">
+    <h2>Table des matières</h2>
+    <ol>
+      <li><a href="#s1">Introduction</a><span class="pg">Présentation, entités, rôles</span></li>
+      <li><a href="#s2">Connexion</a><span class="pg">Se connecter, mot de passe</span></li>
+      <li><a href="#s3">Bibliothèque de prix</a><span class="pg">Filtres, prix, ajout</span></li>
+      <li><a href="#s4">Création d'un devis</a><span class="pg">Manuel, vocal IA, PDF</span></li>
+      <li><a href="#s5">Devis depuis un devis fournisseur</a><span class="pg">Import PDF + OCR</span></li>
+      <li><a href="#s6">Suivi des chantiers</a><span class="pg">Création, suivi</span></li>
+      <li><a href="#s7">Saisie des heures</a><span class="pg">Pointage ouvrier</span></li>
+      <li><a href="#s8">Factures fournisseurs</a><span class="pg">Upload, OCR, validation</span></li>
+      <li><a href="#s9">Suivi des marges</a><span class="pg">Devis vs coûts réels</span></li>
+      <li><a href="#s10">Dashboard &amp; KPIs</a><span class="pg">Indicateurs, filtres</span></li>
+      <li><a href="#s11">FAQ &amp; bonnes pratiques</a><span class="pg">Questions fréquentes</span></li>
+    </ol>
+  </nav>
+
+  <!-- ====================== 1. INTRODUCTION ====================== -->
+  <section class="section" id="s1">
+    <h2><span class="num">1.</span> Introduction</h2>
+
+    <p>Chantier Hub centralise le cycle d'affaires complet du groupe : <strong>du devis au chantier, jusqu'à la
+    marge réelle</strong>. L'application est accessible depuis un navigateur web (ordinateur, tablette,
+    smartphone) et fonctionne en temps réel — chaque utilisateur voit les données mises à jour immédiatement.</p>
+
+    <h3>1.1 Les trois entités</h3>
+    <p>Chantier Hub regroupe trois marques commerciales sous une même société. Une affaire (devis ou chantier)
+    appartient toujours à <em>une</em> entité, mais les <strong>clients</strong> et la <strong>bibliothèque de
+    prix</strong> sont <strong>partagés</strong> entre les trois.</p>
+    <table>
+      <tr><th>Code</th><th>Entité</th><th>Activité</th><th>Clientèle</th></tr>
+      <tr><td><span class="pill">PRO</span></td><td>ARTISAN PRO</td><td>Retail, soumissions, contrats-cadres</td><td>Professionnelle</td></tr>
+      <tr><td><span class="pill">EXT</span></td><td>EXTERIEUR</td><td>Clôtures, garde-corps, pergolas, portails</td><td>Privés &amp; pros</td></tr>
+      <tr><td><span class="pill">INT</span></td><td>INTERIEUR</td><td>Rénovation intérieure</td><td>Privée</td></tr>
+    </table>
+
+    <h3>1.2 Les rôles utilisateurs</h3>
+    <table>
+      <tr><th>Rôle</th><th>Qui</th><th>Accès</th></tr>
+      <tr><td><strong>Administrateur</strong></td><td>Direction &amp; finance</td><td>Accès total : toutes les entités, tous les modules, validation de la bibliothèque, paramètres.</td></tr>
+      <tr><td><strong>Conducteur de travaux</strong></td><td>Responsables d'affaires</td><td>Mêmes droits que l'administrateur sur <strong>ses entités</strong> : clients, chantiers, devis, factures, marges, bibliothèque (ajout, grille tarifaire, duplication). <strong>Sauf</strong> : suppression définitive, validation/rejet de la bibliothèque et accès aux Paramètres.</td></tr>
+      <tr><td><strong>Ouvrier</strong></td><td>Personnel de terrain</td><td>Saisie de ses heures et consultation des chantiers actifs liés. <strong>Pas d'accès</strong> aux prix ni aux marges.</td></tr>
+    </table>
+
+    <div class="note">
+      <span class="lbl">À noter</span>
+      <p>Le cloisonnement par rôle et par entité est appliqué <strong>côté serveur</strong> : un conducteur ne
+      peut pas voir ni modifier les affaires d'une entité qui ne lui est pas attribuée, même en manipulant l'adresse.
+      Les données partagées (clients, bibliothèque) restent visibles par tout le personnel.</p>
+    </div>
+
+
+    <h3>1.3 Repères de l'interface</h3>
+    <ul>
+      <li><strong>Barre latérale</strong> (gauche) : navigation entre les modules, profil connecté, sélecteur d'entité, déconnexion.</li>
+      <li><strong>Mode sombre / clair</strong> : bouton <span class="kbd">☾ / ☀</span> en bas de la barre latérale. Le choix est mémorisé sur l'appareil.</li>
+      <li><strong>Montants</strong> : toujours en francs suisses (CHF), TVA <strong>8,1 %</strong>, arrondi suisse au <strong>0.05</strong> sur le total.</li>
+    </ul>
+  </section>
+
+  <!-- ====================== 2. CONNEXION ====================== -->
+  <section class="section" id="s2">
+    <h2><span class="num">2.</span> Connexion</h2>
+
+    <p>L'accès à Chantier Hub est <strong>réservé</strong> : il n'y a pas d'inscription libre. Les comptes sont
+    créés par l'administrateur, qui communique à chaque utilisateur son adresse e-mail de connexion et un mot de
+    passe provisoire.</p>
+
+    <h3>2.1 Se connecter</h3>
+    <ol>
+      <li>Ouvrez l'adresse de l'application dans votre navigateur.</li>
+      <li>Saisissez votre <strong>e-mail</strong> et votre <strong>mot de passe</strong>.</li>
+      <li>Cliquez sur <strong>Se connecter</strong>. Vous arrivez sur votre tableau de bord, adapté à votre rôle.</li>
+    </ol>
+
+    <h3>2.2 Mot de passe oublié ou à changer</h3>
+    <p>La réinitialisation se fait via l'<strong>administrateur</strong> de votre entreprise : contactez-le pour
+    obtenir un nouveau mot de passe provisoire. À la première connexion, il est recommandé de le remplacer par un
+    mot de passe personnel.</p>
+
+    <div class="tip">
+      <span class="lbl">Astuce</span>
+      <p>Sur smartphone, ajoutez l'application à l'écran d'accueil : elle s'ouvrira comme une appli, idéal pour les
+      ouvriers qui saisissent leurs heures sur le terrain.</p>
+    </div>
+
+    <div class="note">
+      <span class="lbl">À noter</span>
+      <p>Restez connecté uniquement sur vos appareils personnels. Sur un poste partagé, pensez à vous
+      <strong>déconnecter</strong> (bas de la barre latérale).</p>
+    </div>
+  </section>
+
+  <!-- ====================== 3. BIBLIOTHÈQUE ====================== -->
+  <section class="section" id="s3">
+    <h2><span class="num">3.</span> Bibliothèque de prix</h2>
+
+    <p>La bibliothèque rassemble les <strong>prestations</strong> réutilisables dans les devis (désignation,
+    unité, prix, fournisseur, famille). Elle est <strong>commune aux trois entités</strong>. Les ouvriers n'y ont
+    pas accès.</p>
+
+    <h3>3.1 Naviguer &amp; filtrer</h3>
+    <p>Les prestations sont regroupées par <strong>famille</strong> (accordéon repliable, avec le nombre d'articles
+    par famille). En haut, une barre de filtres permet de combiner :</p>
+    <ul>
+      <li><strong>Recherche texte</strong> — sur la désignation, le code et le code CFC.</li>
+      <li><strong>Entité</strong> — PRO / EXT / INT (sélection multiple ; toutes par défaut).</li>
+      <li><strong>Fournisseur</strong> — liste construite automatiquement à partir des données.</li>
+      <li><strong>Famille</strong> — liste des familles existantes.</li>
+    </ul>
+    <p>Les filtres se cumulent (ET logique). Le bouton <strong>Réinitialiser les filtres</strong> remet tout à zéro.</p>
+
+
+    <h3>3.2 Comprendre l'affichage des prix (PA vs PV)</h3>
+    <table>
+      <tr><th>Sigle</th><th>Signification</th><th>Rôle</th></tr>
+      <tr><td><strong>PV</strong></td><td>Prix de vente de référence</td><td>Prix proposé au client (avant grille tarifaire par catégorie).</td></tr>
+      <tr><td><strong>PA</strong></td><td>Prix d'achat net</td><td>Coût d'achat de la prestation (sert au calcul de la marge).</td></tr>
+    </table>
+    <p>Dans la liste, le prix affiché en grand est le <strong>prix de vente (PV)</strong> s'il existe ; sinon
+    l'application affiche le <strong>prix d'achat (PA)</strong> comme valeur de repli (utile pour les catalogues
+    fournisseurs importés sans prix de vente). Quand les deux existent, le coût d'achat apparaît en petit, en gris,
+    sous la forme <code>PA : 48.00 CHF</code>.</p>
+
+    <div class="note">
+      <span class="lbl">À noter</span>
+      <p>Le prix réellement appliqué dans un devis peut différer du prix de référence : il dépend de la
+      <strong>catégorie tarifaire du client</strong> (remise %, coefficient ou prix fixe défini dans la grille de
+      la prestation).</p>
+    </div>
+
+    <h3>3.3 Ajouter une prestation manuellement</h3>
+    <p>Deux chemins existent :</p>
+    <ol>
+      <li><strong>Depuis la bibliothèque</strong> (administrateur ou conducteur) : bouton <strong>Nouvelle
+      prestation</strong> pour créer une fiche complète (postes, grille tarifaire, etc.).</li>
+      <li><strong>Depuis un devis</strong> (administrateur ou conducteur) : dans le sélecteur de prestation, chaque
+      ligne porte une icône <strong>« Ajouter à la bibliothèque »</strong> (signet). Un formulaire s'ouvre,
+      pré-rempli (désignation, famille, unité, prix d'achat, fournisseur, <strong>code CFC</strong> ; l'entité du
+      devis est reprise). Les listes <em>famille</em> et <em>fournisseur</em> proposent les valeurs existantes ou
+      la création d'une nouvelle. En cliquant sur <strong>Enregistrer</strong>, la prestation entre
+      <strong>directement</strong> dans la bibliothèque, active.</li>
+    </ol>
+
+    <div class="tip">
+      <span class="lbl">Astuce</span>
+      <p>Si la prestation existe déjà (même désignation), l'application ne crée pas de doublon et affiche
+      « Prestation déjà existante ». Vous pouvez ressaisir le même geste sans risque.</p>
+    </div>
+
+    <div class="note">
+      <span class="lbl">À noter</span>
+      <p>Le conducteur peut désormais <strong>créer</strong> une prestation, gérer sa <strong>grille
+      tarifaire</strong> et la <strong>dupliquer</strong>. Restent réservées à l'administrateur : l'<strong>édition
+      directe</strong> de la famille / du code CFC dans la liste, la <strong>suppression</strong>, et la
+      <strong>validation/rejet</strong> des prestations proposées (file « À valider »).</p>
+    </div>
+  </section>
+
+  <!-- ====================== 4. CRÉATION D'UN DEVIS ====================== -->
+  <section class="section" id="s4">
+    <h2><span class="num">4.</span> Création d'un devis</h2>
+
+    <p>Le module <strong>Devis</strong> permet de bâtir une offre ligne par ligne, avec calcul automatique des
+    totaux, de la TVA, de l'arrondi suisse et de la marge.</p>
+
+    <h3>4.1 Démarrer un devis</h3>
+    <ol>
+      <li>Menu <strong>Devis → Nouveau devis</strong>.</li>
+      <li>Choisissez l'<strong>entité</strong>, le <strong>client</strong> et, en option, le <strong>chantier</strong>.</li>
+      <li>Renseignez l'<strong>objet</strong> (introduction du PDF) ; les <strong>conditions de paiement</strong>
+      se pré-remplissent selon le client (modifiables).</li>
+    </ol>
+    <p>Le numéro de devis suit la nomenclature <code>AAMMNNN / R</code> (ex. <code>2606001 / R</code>).</p>
+
+    <h3>4.2 Ajouter des lignes</h3>
+    <ul>
+      <li><strong>Depuis la bibliothèque</strong> : utilisez le sélecteur (recherche + filtres + résultats
+      groupés par famille). L'entité du devis est pré-sélectionnée (modifiable). Le prix est résolu selon la
+      catégorie tarifaire du client.</li>
+      <li><strong>Ligne libre</strong> : bouton <strong>Ligne libre</strong> pour saisir une prestation hors
+      bibliothèque (désignation, unité, quantité, prix).</li>
+    </ul>
+    <p>Chaque ligne accepte une <strong>remise</strong> par ligne. Certaines lignes peuvent être marquées comme
+    <strong>option</strong> (non totalisée) ou comme <strong>titre</strong> (sous-ensemble).</p>
+
+
+    <h3>4.3 Saisie assistée par IA (vocal &amp; texte)</h3>
+    <p>Après avoir choisi l'entité et le client, la <strong>dictée IA</strong> devient disponible :</p>
+    <ol>
+      <li>Cliquez sur le <strong>micro</strong> et dictez les prestations (ou saisissez-les en texte libre).</li>
+      <li>L'IA transcrit et structure les lignes, puis affiche une <strong>prévisualisation</strong>.</li>
+      <li>Vérifiez, ajustez, puis <strong>insérez</strong> les lignes dans le devis. Les lignes hors bibliothèque
+      peuvent être ajoutées à la bibliothèque via le bouton <strong>+ Biblio</strong>.</li>
+    </ol>
+    <div class="note">
+      <span class="lbl">À noter</span>
+      <p>L'IA ne fixe <strong>jamais</strong> les prix : elle ne propose que la <em>structure</em> (désignation,
+      quantité, unité). Le prix est toujours calculé par l'application à partir de la bibliothèque et de la
+      catégorie du client. La dictée n'est pas disponible pour le rôle ouvrier.</p>
+    </div>
+
+    <h3>4.4 Générer le PDF</h3>
+    <p>Une fois le devis enregistré, l'application génère le <strong>PDF</strong> à la charte de l'entité (logo,
+    CGV). Le document reprend l'objet, les lignes, les totaux HT / TVA / TTC et les conditions de paiement.</p>
+
+    <div class="tip">
+      <span class="lbl">Astuce</span>
+      <p>Si vous quittez l'éditeur avec des lignes <strong>non enregistrées</strong>, l'application demande
+      confirmation avant de perdre votre saisie.</p>
+    </div>
+  </section>
+
+  <!-- ====================== 5. DEVIS DEPUIS DEVIS FOURNISSEUR ====================== -->
+  <section class="section" id="s5">
+    <h2><span class="num">5.</span> Créer un devis depuis un devis fournisseur</h2>
+
+    <p>Lorsqu'un conducteur reçoit le devis PDF d'un <strong>sous-traitant</strong>, il n'a pas à tout ressaisir :
+    l'application extrait les lignes automatiquement (OCR) pour bâtir le devis client par-dessus.</p>
+
+    <h3>5.1 Importer le PDF</h3>
+    <ol>
+      <li>Dans l'éditeur de devis (entité + client choisis), section <strong>Saisie assistée</strong>, cliquez sur
+      <strong>Importer un devis PDF</strong>.</li>
+      <li>Sélectionnez le fichier (PDF, jusqu'à 20 Mo). L'analyse prend généralement 10 à 30 secondes.</li>
+    </ol>
+
+    <h3>5.2 Vérifier &amp; ajuster les lignes extraites</h3>
+    <p>L'OCR affiche une <strong>prévisualisation éditable</strong> : désignation, unité, quantité et
+    <strong>prix du sous-traitant</strong>. Le conducteur contrôle chaque ligne (corrige, supprime, complète) avant
+    insertion. Les lignes sont insérées <strong>au prix sous-traitant</strong>, sans lien avec la bibliothèque.</p>
+
+    <h3>5.3 Enregistrer au passage dans la bibliothèque</h3>
+    <p>Chaque ligne de la prévisualisation comporte un bouton <strong>+ Biblio</strong> : il ajoute la prestation à
+    la bibliothèque commune (en saisissant le <em>prix de vente</em>, distinct du prix sous-traitant). Pratique pour
+    capitaliser sur les articles récurrents d'un sous-traitant.</p>
+
+    <h3>5.4 Finaliser le devis client</h3>
+    <p>Après insertion, vous complétez/ajustez les prix de vente, puis enregistrez et générez le PDF comme un devis
+    classique (voir section 4.4).</p>
+
+    <div class="note">
+      <span class="lbl">À noter</span>
+      <p>Le PDF du sous-traitant <strong>n'est pas stocké</strong> : il sert uniquement à l'extraction. Vérifiez
+      toujours les montants extraits — l'OCR gère des formats hétérogènes et peut nécessiter une correction
+      ponctuelle.</p>
+    </div>
+  </section>
+
+  <!-- ====================== 6. CHANTIERS ====================== -->
+  <section class="section" id="s6">
+    <h2><span class="num">6.</span> Suivi des chantiers</h2>
+
+    <p>Un <strong>chantier</strong> matérialise une affaire en cours d'exécution. Il porte une entité, un client,
+    une adresse et un statut.</p>
+
+    <h3>6.1 Créer un chantier</h3>
+    <ol>
+      <li>Menu <strong>Chantiers → Nouveau</strong>.</li>
+      <li>Renseignez le client, l'entité, la ville/adresse. La référence suit le format <code>NOM CLIENT / VILLE</code>.</li>
+      <li>Définissez le statut : <strong>prospect</strong>, <strong>actif</strong> ou <strong>clôturé</strong>.</li>
+    </ol>
+
+    <h3>6.2 Affecter un devis</h3>
+    <p>Un devis peut être rattaché à un chantier (au moment de sa création ou ensuite). Le <strong>devis accepté</strong>
+    devient la référence de chiffre d'affaires utilisée pour calculer la marge réelle du chantier.</p>
+
+    <h3>6.3 Suivre l'avancement</h3>
+    <p>La fiche chantier agrège les éléments rattachés : devis, <strong>heures pointées</strong> et
+    <strong>coûts fournisseurs</strong> (factures réparties). La marge réelle se met à jour automatiquement à mesure
+    que les heures et les factures sont saisies.</p>
+    <p>Une section <strong>Factures fournisseurs</strong> liste désormais, directement sur la fiche, les factures
+    rattachées au chantier avec leur <strong>statut</strong> (à valider / validée) et leur montant — sans quitter le
+    chantier.</p>
+
+
+    <div class="note">
+      <span class="lbl">À noter</span>
+      <p>Un conducteur ne voit que les chantiers de <strong>ses entités</strong>. Les ouvriers voient en lecture
+      seule les chantiers <strong>actifs</strong> auxquels ils sont liés (pour pointer leurs heures).</p>
+    </div>
+  </section>
+
+  <!-- ====================== 7. HEURES ====================== -->
+  <section class="section" id="s7">
+    <h2><span class="num">7.</span> Saisie des heures</h2>
+
+    <p>Le module <strong>Heures</strong> permet à chaque ouvrier de pointer son temps de travail par jour et par
+    chantier. Il est pensé <strong>mobile-first</strong> pour la saisie sur le terrain.</p>
+
+    <h3>7.1 Saisir une journée</h3>
+    <ol>
+      <li>Menu <strong>Mes heures</strong>.</li>
+      <li>Choisissez la <strong>date</strong> et le <strong>chantier</strong>.</li>
+      <li>Renseignez les <strong>heures travaillées</strong> et, si besoin, le <strong>temps de trajet</strong>.</li>
+      <li>Ajoutez une note éventuelle, puis enregistrez.</li>
+    </ol>
+
+    <h3>7.2 Règles de saisie</h3>
+    <ul>
+      <li>La référence indicative est de <strong>42 h/semaine</strong> (8 h 40 par jour) — c'est un repère, pas une limite.</li>
+      <li>Il n'y a <strong>aucun verrou</strong> : vous pouvez saisir plus ou moins, corriger une journée passée, etc.</li>
+      <li>Le <strong>temps de trajet</strong> est saisi à part (champ dédié) ; il n'est pas calculé automatiquement.</li>
+    </ul>
+
+    <div class="note">
+      <span class="lbl">À noter</span>
+      <p>Les heures alimentent directement le <strong>coût de main-d'œuvre</strong> des chantiers (au taux horaire
+      paramétré, 70 CHF par défaut) et donc le calcul de la marge réelle. Une saisie régulière garantit des marges
+      fiables.</p>
+    </div>
+
+    <div class="tip">
+      <span class="lbl">Action requise — admin</span>
+      <p>Pour des marges justes, <strong>renseignez les taux horaires</strong> dans <strong>Paramètres → onglet
+      Ouvriers</strong> :</p>
+      <ul>
+        <li><strong>Taux horaire par défaut</strong> — appliqué à tout employé sans taux propre (70 CHF tant qu'il
+        n'est pas modifié).</li>
+        <li><strong>Taux horaires par employé</strong> — un taux individuel par ouvrier / conducteur ; il prend le
+        pas sur le défaut. Laissé vide, l'employé retombe sur le taux par défaut (bouton « Réinitialiser au taux
+        par défaut » pour revenir à ce comportement).</li>
+      </ul>
+      <p>Tant que ces taux ne reflètent pas la réalité, le <strong>coût de main-d'œuvre</strong> — et donc la marge —
+      reste approximatif. C'est une saisie à faire une fois, puis à ajuster si un taux change.</p>
+    </div>
+  </section>
+
+  <!-- ====================== 8. FACTURES FOURNISSEURS ====================== -->
+  <section class="section" id="s8">
+    <h2><span class="num">8.</span> Factures fournisseurs</h2>
+
+    <p>Ce module enregistre les <strong>achats</strong> (matériaux, sous-traitance) et les répartit sur les
+    chantiers pour calculer la marge réelle.</p>
+
+    <h3>8.1 Déposer une facture</h3>
+    <ol>
+      <li>Menu <strong>Factures fournisseurs → déposer le PDF</strong> (glisser-déposer ou sélection de fichier).</li>
+      <li>L'OCR analyse la facture et <strong>pré-remplit l'en-tête</strong> : fournisseur, numéro, date, montants HT/TTC, TVA.</li>
+      <li>La facture est créée au statut <strong>« à valider »</strong>.</li>
+    </ol>
+
+    <h3>8.2 Vérifier &amp; répartir</h3>
+    <p>Avant validation, contrôlez les montants extraits et <strong>répartissez</strong> le montant HT sur un ou
+    plusieurs chantiers. L'application signale si la répartition n'<strong>équilibre</strong> pas le montant total
+    de la facture.</p>
+
+    <h3>8.3 Valider</h3>
+    <p>Une fois vérifiée, passez la facture en <strong>« validée »</strong>. Son coût est alors pris en compte dans
+    la marge réelle des chantiers concernés.</p>
+
+    <div class="note">
+      <span class="lbl">À noter</span>
+      <p>Les formats de factures varient selon les fournisseurs : l'OCR fait gagner du temps mais la
+      <strong>vérification humaine reste indispensable</strong> avant validation. Si un fichier ne s'analyse pas,
+      vous pouvez compléter les champs à la main.</p>
+    </div>
+  </section>
+
+  <!-- ====================== 9. MARGES ====================== -->
+  <section class="section" id="s9">
+    <h2><span class="num">9.</span> Suivi des marges</h2>
+
+    <p>La <strong>marge</strong> mesure l'écart entre ce qui est facturé au client (devis accepté) et ce que le
+    chantier coûte réellement.</p>
+
+    <h3>9.1 Comment elle se calcule</h3>
+    <p style="text-align:center; margin:14px 0;">
+      <code>Marge = Total HT (devis) − Coût de revient réel</code><br>
+      <span style="color:var(--grey); font-size:10pt;">Coût de revient réel = heures pointées (× taux horaire) + factures fournisseurs réparties</span>
+    </p>
+    <p>La marge est <strong>dérivée</strong> (calculée et affichée), jamais saisie ni « validée » en amont. Le taux
+    de marge est exprimé en % du total HT.</p>
+
+    <h3>9.2 Lire l'indicateur</h3>
+    <p>Sur les chantiers et le dashboard, une pastille indique la santé de la marge :</p>
+    <table>
+      <tr><th>Pastille</th><th>Signification</th></tr>
+      <tr><td>● Vert</td><td>Marge satisfaisante (au-dessus du seuil cible)</td></tr>
+      <tr><td>● Ambre</td><td>Marge faible (sous le seuil d'alerte)</td></tr>
+      <tr><td>● Rouge</td><td>Marge négative (le chantier coûte plus qu'il ne rapporte)</td></tr>
+    </table>
+
+    <div class="note">
+      <span class="lbl">À noter</span>
+      <p>La marge n'est <strong>pas toujours calculable</strong> au moment du devis (cas des chantiers en régie ou
+      de certains contrats type enseigne retail). Dans ces cas, l'application affiche « marge — » plutôt qu'une valeur
+      trompeuse. La marge se précise au fil des heures et factures saisies.</p>
+    </div>
+
+  </section>
+
+  <!-- ====================== 10. DASHBOARD ====================== -->
+  <section class="section" id="s10">
+    <h2><span class="num">10.</span> Dashboard &amp; KPIs</h2>
+
+    <p>Le tableau de bord donne une vue synthétique de l'activité. Il s'adapte au rôle : l'ouvrier voit ses heures
+    et ses chantiers ; l'administrateur et le conducteur voient les indicateurs financiers.</p>
+
+    <h3>10.1 Filtrer</h3>
+    <ul>
+      <li><strong>Entité</strong> (administrateur &amp; conducteur) — toutes ou une seule.</li>
+      <li><strong>Période</strong> — cette semaine, ce mois, ce trimestre.</li>
+    </ul>
+
+    <h3>10.2 Les indicateurs</h3>
+    <table>
+      <tr><th>Indicateur</th><th>Lecture</th></tr>
+      <tr><td>CA HT accepté</td><td>Chiffre d'affaires des devis acceptés sur la période.</td></tr>
+      <tr><td>Taux d'acceptation</td><td>Devis acceptés / (acceptés + refusés + expirés).</td></tr>
+      <tr><td>Marge réelle (CHF / %)</td><td>Marge cumulée et part non calculable signalée.</td></tr>
+      <tr><td>Chantiers actifs</td><td>En cours, avec le nombre de chantiers terminés sur la période.</td></tr>
+      <tr><td>Heures saisies</td><td>Heures travaillées + trajet sur la période.</td></tr>
+      <tr><td>Factures à valider</td><td>Nombre et montant en attente de validation.</td></tr>
+      <tr><td>Devis envoyés &gt; 30 j</td><td>Devis sans réponse à relancer.</td></tr>
+      <tr><td>Devis par statut</td><td>Répartition brouillon / envoyé / accepté / refusé / expiré.</td></tr>
+    </table>
+
+    <div class="tip">
+      <span class="lbl">Astuce</span>
+      <p>Surveillez « Factures à valider » et « Devis envoyés &gt; 30 j » : ce sont les deux indicateurs qui
+      appellent une <strong>action immédiate</strong> (valider, ou relancer le client).</p>
+    </div>
+  </section>
+
+  <!-- ====================== 11. FAQ ====================== -->
+  <section class="section" id="s11">
+    <h2><span class="num">11.</span> FAQ &amp; bonnes pratiques</h2>
+
+    <h4>Je ne vois pas une affaire / un chantier — pourquoi ?</h4>
+    <p>Vous n'avez probablement pas accès à l'entité concernée (conducteur), ou le chantier n'est pas actif
+    (ouvrier). L'administrateur peut vérifier vos entités.</p>
+
+    <h4>Le prix d'une prestation est vide ou à 0 dans la bibliothèque</h4>
+    <p>La prestation n'a pas de prix de vente ; l'application affiche alors le prix d'achat. Vous pouvez compléter
+    le prix de vente (administrateur) pour un affichage plus parlant.</p>
+
+    <h4>Pourquoi la marge affiche « — » ?</h4>
+    <p>Aucun devis accepté n'est rattaché, ou la marge n'est pas calculable (régie / contrat spécifique). Voir
+    section 9.</p>
+
+    <h4>L'OCR s'est trompé sur un montant</h4>
+    <p>C'est possible sur des formats inhabituels : corrigez la valeur dans la prévisualisation (devis ST) ou
+    l'en-tête (facture) avant d'insérer / valider. Vérifiez toujours avant de valider.</p>
+
+    <h4>Puis-je modifier un devis déjà émis ?</h4>
+    <p>Seuls les <strong>brouillons</strong> sont modifiables en place. Un devis envoyé/accepté se consulte ; pour
+    le retravailler, dupliquez-le.</p>
+
+    <h4>Comment changer entre mode clair et sombre ?</h4>
+    <p>Bouton ☾ / ☀ en bas de la barre latérale (ou en haut de la page de connexion). Le choix est mémorisé sur
+    l'appareil.</p>
+
+    <div class="note">
+      <span class="lbl">Bonnes pratiques</span>
+      <p>① Saisir les heures et déposer les factures <strong>au fil de l'eau</strong> pour des marges fiables.
+      ② Alimenter la bibliothèque via « Ajouter à la bibliothèque » pour gagner du temps sur les devis suivants.
+      ③ Relancer les devis envoyés depuis &gt; 30 jours signalés au dashboard.</p>
+    </div>
+  </section>
+
+  <div class="footer-note">
+    Chantier Hub — Manuel utilisateur · Template open source.<br>
+  </div>
+
+</div>
+</body>
+</html>

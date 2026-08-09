@@ -1,0 +1,490 @@
+{
+  "name": "Chantier Hub — Devis assisté (nœuds natifs)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "devis-assiste",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1e815134-4398-42a3-b77d-061d6fe8e84e",
+      "name": "Webhook devis-assiste",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1536,
+        64
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REMPLACER_PAR_VOTRE_CREDENTIAL_ID",
+          "name": "Webhook Auth — devis assisté"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\nconst errs = [];\nif (!['creation','edition'].includes(body.mode)) errs.push('mode');\nif (!['audio','texte'].includes(body.input_type)) errs.push('input_type');\nif (body.input_type === 'texte' && !body.texte) errs.push('texte');\nif (body.input_type === 'audio' && !body.audio_base64) errs.push('audio_base64');\nif (!body.contexte || !body.contexte.entite_code) errs.push('contexte.entite_code');\nif (!body.contexte || !body.contexte.client || !body.contexte.client.nom) errs.push('contexte.client');\nif (body.mode === 'edition' && !(body.contexte && body.contexte.devis_courant && Array.isArray(body.contexte.devis_courant.lignes))) errs.push('contexte.devis_courant.lignes');\nif (errs.length) return [{ json: { valid: false, champs: errs } }];\nreturn [{ json: { valid: true, payload: body } }];"
+      },
+      "id": "0c77d094-f82c-45c1-98c9-2a4add1b63ad",
+      "name": "1. Validation payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1312,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d21c3521-f067-4c48-b812-9d253724add6",
+      "name": "Payload valide ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, erreur: 'payload_invalide', champs: $json.champs }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "51845729-5f4f-4673-9b1b-51e0722fb461",
+      "name": "Réponse 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -880,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.payload.input_type }}",
+              "rightValue": "audio",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "011f5eef-066e-40b8-af70-811cda71d37a",
+      "name": "Audio ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $json.payload;\nconst buf = Buffer.from(p.audio_base64, 'base64');\nif (!buf.length) return [{ json: { payload: p, audioVide: true } }];\nconst binary = await this.helpers.prepareBinaryData(buf, 'audio.webm', 'audio/webm');\nreturn [{ json: { payload: p }, binary: { audio: binary } }];"
+      },
+      "id": "bba6bfd0-57cf-4b26-8216-b1f6b5abf141",
+      "name": "2. Base64 vers binaire",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -656,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "binaryPropertyName": "audio",
+        "options": {}
+      },
+      "id": "8b6b54ac-8136-415e-ab19-a34800817702",
+      "name": "3. STT (OpenAI natif)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -432,
+        -96
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REMPLACER_PAR_VOTRE_CREDENTIAL_ID",
+          "name": "OpenAI — votre compte"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('1. Validation payload').first().json.payload;\nlet consigne = null, transcription = null, sttError = null;\nif (base.input_type === 'audio') {\n  const r = $input.first().json || {};\n  transcription = r.text || r.transcription || r.transcript || null;\n  if (!transcription || !String(transcription).trim()) sttError = 'transcription_echouee';\n  consigne = transcription;\n} else {\n  consigne = base.texte;\n}\nreturn [{ json: { payload: base, consigne, transcription, sttError } }];"
+      },
+      "id": "a1254074-c14a-4bc9-b5b9-ac006f508d7a",
+      "name": "4. Consigne",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.sttError }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cf73e218-4920-43e3-a4ad-30e82ac29585",
+      "name": "Erreur STT ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        16,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, erreur: $json.sttError }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "4e5f073c-f46e-4198-889e-a394eab3ed91",
+      "name": "Réponse erreur STT",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        -272
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "prestations",
+        "returnAll": true,
+        "filters": {
+          "conditions": []
+        }
+      },
+      "id": "99b2c1e4-1fa0-4998-a532-8f9c44fcbdff",
+      "name": "5. Biblio Supabase (natif)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        224,
+        144
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "REMPLACER_PAR_VOTRE_CREDENTIAL_ID",
+          "name": "Supabase — votre projet"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('4. Consigne').first().json;\nconst p = ctx.payload;\nconst biblioItems = $input.all().map(i => i.json).filter(j => j && j.id && (j.libelle || j.designation));\nconst biblioTxt = biblioItems.length\n  ? biblioItems.map(b => `${b.id} | ${b.code || ''} | ${b.libelle || b.designation} | ${b.unite || ''}`).join('\\n')\n  : '(bibliothèque vide — toutes les lignes seront libres, prestation_id null)';\nconst ENTITES = { PRO: 'ARTISAN PRO', EXT: 'EXTERIEUR', INT: 'INTERIEUR' };\nconst system = [\n  `Tu es l'assistant de chiffrage d'une entreprise suisse de rénovation/construction (${ENTITES[p.contexte.entite_code] || p.contexte.entite_code}). Tu transformes une consigne (dictée ou tapée) en lignes de devis structurées. Règles absolues :`,\n  `1. Tu ne calcules JAMAIS de montants, totaux ou TVA. Tu ne produis que la structure : désignations, unités, quantités.`,\n  `2. Pour chaque prestation, cherche la correspondance dans la BIBLIOTHÈQUE fournie (par libellé/code). Correspondance sûre -> prestation_id + confiance \"haute\". Plusieurs candidats plausibles -> prestation_id null + jusqu'à 3 \"candidats\" [{prestation_id, libelle}] + confiance \"moyenne\". Aucune -> prestation_id null + désignation libre propre + confiance \"basse\".`,\n  `3. Décompose les demandes globales en sous-tâches métier. Exemple : \"carrelage salle de bain 12 m2\" -> dépose de l'existant, préparation/ragréage, fourniture, pose, joints. Une ligne par tâche ; quantités déduites de la consigne (surface dictée -> lignes surfaciques).`,\n  `4. Unités autorisées : Fft (forfait), U, pce, m2, ml, h. \"forfait\" -> Fft, quantité 1.`,\n  `5. \"en option\"/\"si le client veut\" -> est_option=true. Intitulés de zones (\"salle de bain\") -> lignes {\"type\":\"titre\",\"designation\":...}.`,\n  `6. Mode ÉDITION : tu reçois le devis courant (lignes + ids). Tu renvoies UNIQUEMENT des opérations sur ces ids — jamais le devis complet. Formats : {\"op\":\"ajouter_ligne\",\"position\":\"fin\"|{\"apres_ligne_id\":id},\"ligne\":{...}} ; {\"op\":\"modifier_ligne\",\"ligne_id\":id,\"champs\":{quantite?,designation?,unite?,est_option?,prix_unitaire? (seulement si prix dicté)}} ; {\"op\":\"supprimer_ligne\",\"ligne_id\":id}. Ambigu (plusieurs lignes) -> {\"op\":\"ambigu\",\"message\":...,\"candidats_ligne_ids\":[...],\"operation_en_attente\":{...}} — ne tranche pas.`,\n  `7. Langue : français. Désignations professionnelles, concises, sans fautes.`,\n  `8. Réponds STRICTEMENT en JSON, sans markdown ni texte autour. Mode creation : {\"lignes\":[{\"type\":\"titre\",\"designation\":...} | {\"type\":\"prestation\",\"prestation_id\":id|null,\"designation\":...,\"unite\":...,\"quantite\":n,\"est_option\":bool,\"confiance\":\"haute\"|\"moyenne\"|\"basse\",\"candidats\":[]}],\"avertissements\":[]}. Mode edition : {\"operations\":[...],\"avertissements\":[]}.`\n].join('\\n');\nlet user = `MODE: ${p.mode}\\nENTITÉ: ${p.contexte.entite_code}\\nCLIENT: ${p.contexte.client.nom} (catégorie ${p.contexte.client.categorie_tarifaire || 'inconnue'})\\nBIBLIOTHÈQUE (id | code | libellé | unité):\\n${biblioTxt}\\n`;\nif (p.mode === 'edition') {\n  const lignes = p.contexte.devis_courant.lignes.map(l => `${l.id} | ${l.designation} | ${l.unite || ''} | ${l.quantite ?? ''} | ${l.est_titre ? 'TITRE' : ''}${l.est_option ? 'OPTION' : ''}`).join('\\n');\n  user += `DEVIS COURANT (id | désignation | unité | qté | drapeaux):\\n${lignes}\\n`;\n}\nuser += `CONSIGNE:\\n${ctx.consigne}`;\nreturn [{ json: { system, user, biblioIds: biblioItems.map(b => b.id), payload: p, transcription: ctx.transcription } }];"
+      },
+      "id": "abc75b86-22ea-4e26-ba3c-d69118e77344",
+      "name": "6. Construction prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-5.4-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.system }}",
+              "role": "system"
+            },
+            {
+              "content": "={{ $json.user }}"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "id": "2c613742-4d7c-4993-891b-32b89342e626",
+      "name": "7. LLM (OpenAI natif)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        640,
+        144
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REMPLACER_PAR_VOTRE_CREDENTIAL_ID",
+          "name": "OpenAI — votre compte"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prep = $('6. Construction prompt').first().json;\nconst res = $input.first().json || {};\n\nconst UNITES = ['Fft','U','pce','m2','ml','h'];\nconst normUnite = (u) => {\n  if (!u) return 'Fft';\n  if (UNITES.includes(u)) return u;\n  const m = String(u).toLowerCase().replace('²','2').trim();\n  const map = { 'm2':'m2','ml':'ml','h':'h','heure':'h','heures':'h','u':'U','unite':'U','unité':'U','pce':'pce','piece':'pce','pièce':'pce','pieces':'pce','pièces':'pce','fft':'Fft','forfait':'Fft' };\n  return map[m] || 'Fft';\n};\n\nconst out = { ok: true, mode: prep.payload.mode, transcription: prep.transcription || null, avertissements: [] };\n\n// Récupère le contenu LLM quel que soit le format renvoyé par le nœud OpenAI natif\nlet content = (res && res.choices && res.choices[0] && res.choices[0].message && res.choices[0].message.content)\n  || (res && res.message && res.message.content)\n  || res.content || res.text || null;\n\nlet raw;\nif (content && typeof content === 'object') {\n  raw = content;\n} else if (typeof content === 'string') {\n  try { raw = JSON.parse(content.replace(/^```(json)?/m, '').replace(/```\\s*$/m, '').trim()); }\n  catch (e) { return [{ json: { ok: false, erreur: 'llm_indisponible' } }]; }\n} else if (res && (Array.isArray(res.lignes) || Array.isArray(res.operations))) {\n  raw = res;\n} else {\n  return [{ json: { ok: false, erreur: 'llm_indisponible' } }];\n}\n\nconst ids = new Set(prep.biblioIds);\nconst cleanLigne = (l) => {\n  if (!l || typeof l !== 'object') return null;\n  if (l.type === 'titre') return { type: 'titre', designation: String(l.designation || '').slice(0, 300) };\n  const ligne = { type: 'prestation', designation: String(l.designation || '').slice(0, 300) };\n  if (!ligne.designation) return null;\n  if (l.prestation_id && ids.has(l.prestation_id)) ligne.prestation_id = l.prestation_id;\n  else { if (l.prestation_id) out.avertissements.push(`Référence bibliothèque inconnue ignorée pour « ${ligne.designation} »`); ligne.prestation_id = null; }\n  ligne.unite = normUnite(l.unite);\n  let q = Number(l.quantite);\n  if (!isFinite(q) || q <= 0) { q = 1; out.avertissements.push(`Quantité invalide remplacée par 1 pour « ${ligne.designation} »`); }\n  ligne.quantite = q;\n  ligne.est_option = !!l.est_option;\n  ligne.confiance = ['haute','moyenne','basse'].includes(l.confiance) ? l.confiance : (ligne.prestation_id ? 'moyenne' : 'basse');\n  ligne.candidats = Array.isArray(l.candidats) ? l.candidats.filter(c => c && ids.has(c.prestation_id)).map(c => ({ prestation_id: c.prestation_id, libelle: String(c.libelle || '') })).slice(0, 3) : [];\n  return ligne;\n};\n\nif (prep.payload.mode === 'creation') {\n  const lignes = Array.isArray(raw.lignes) ? raw.lignes.map(cleanLigne).filter(Boolean) : [];\n  if (!lignes.length) return [{ json: { ok: false, erreur: 'llm_indisponible' } }];\n  out.lignes = lignes;\n} else {\n  const ligneIds = new Set((prep.payload.contexte.devis_courant?.lignes || []).map(l => l.id));\n  const ops = Array.isArray(raw.operations) ? raw.operations : [];\n  out.operations = [];\n  for (const o of ops) {\n    if (!o || typeof o !== 'object') continue;\n    if (o.op === 'ajouter_ligne' && o.ligne) {\n      const ligne = cleanLigne(o.ligne);\n      if (!ligne) continue;\n      const position = (o.position && o.position.apres_ligne_id && ligneIds.has(o.position.apres_ligne_id)) ? o.position : 'fin';\n      out.operations.push({ op: 'ajouter_ligne', position, ligne });\n    } else if (o.op === 'modifier_ligne' && ligneIds.has(o.ligne_id) && o.champs && typeof o.champs === 'object') {\n      const champs = {};\n      if (o.champs.quantite !== undefined) { const q = Number(o.champs.quantite); if (isFinite(q) && q > 0) champs.quantite = q; }\n      if (o.champs.designation) champs.designation = String(o.champs.designation).slice(0, 300);\n      if (o.champs.unite) champs.unite = normUnite(o.champs.unite);\n      if (o.champs.est_option !== undefined) champs.est_option = !!o.champs.est_option;\n      if (o.champs.prix_unitaire !== undefined) { const px = Number(o.champs.prix_unitaire); if (isFinite(px) && px >= 0) champs.prix_unitaire = px; }\n      if (Object.keys(champs).length) out.operations.push({ op: 'modifier_ligne', ligne_id: o.ligne_id, champs });\n      else out.avertissements.push('Modification sans champ valide ignorée');\n    } else if (o.op === 'supprimer_ligne' && ligneIds.has(o.ligne_id)) {\n      out.operations.push({ op: 'supprimer_ligne', ligne_id: o.ligne_id });\n    } else if (o.op === 'ambigu') {\n      const cands = (Array.isArray(o.candidats_ligne_ids) ? o.candidats_ligne_ids : []).filter(id => ligneIds.has(id));\n      if (cands.length >= 2) out.operations.push({ op: 'ambigu', message: String(o.message || 'Précision nécessaire'), candidats_ligne_ids: cands, operation_en_attente: (o.operation_en_attente && typeof o.operation_en_attente === 'object') ? o.operation_en_attente : null });\n    } else {\n      out.avertissements.push('Opération invalide ignorée');\n    }\n  }\n  if (!out.operations.length) return [{ json: { ok: false, erreur: 'aucune_operation', avertissements: out.avertissements } }];\n}\nif (Array.isArray(raw.avertissements)) out.avertissements.push(...raw.avertissements.map(a => String(a)).slice(0, 10));\nreturn [{ json: out }];"
+      },
+      "id": "6aca3b78-8a74-4204-a013-ecc248839b8f",
+      "name": "8. Validation et normalisation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "7c46b320-6af4-4b18-b060-c5524365091c",
+      "name": "Réponse JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        144
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook devis-assiste": {
+      "main": [
+        [
+          {
+            "node": "1. Validation payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Validation payload": {
+      "main": [
+        [
+          {
+            "node": "Payload valide ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload valide ?": {
+      "main": [
+        [
+          {
+            "node": "Audio ?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Réponse 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audio ?": {
+      "main": [
+        [
+          {
+            "node": "2. Base64 vers binaire",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "4. Consigne",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Base64 vers binaire": {
+      "main": [
+        [
+          {
+            "node": "3. STT (OpenAI natif)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. STT (OpenAI natif)": {
+      "main": [
+        [
+          {
+            "node": "4. Consigne",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Consigne": {
+      "main": [
+        [
+          {
+            "node": "Erreur STT ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Erreur STT ?": {
+      "main": [
+        [
+          {
+            "node": "Réponse erreur STT",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "5. Biblio Supabase (natif)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Biblio Supabase (natif)": {
+      "main": [
+        [
+          {
+            "node": "6. Construction prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Construction prompt": {
+      "main": [
+        [
+          {
+            "node": "7. LLM (OpenAI natif)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. LLM (OpenAI natif)": {
+      "main": [
+        [
+          {
+            "node": "8. Validation et normalisation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8. Validation et normalisation": {
+      "main": [
+        [
+          {
+            "node": "Réponse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": true
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

@@ -1,0 +1,223 @@
+{
+  "name": "Chantier Hub — OCR Devis sous-traitant",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ocr-devis-st",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "87685489-7e84-47cc-8f17-2a5ca752ce0d",
+      "name": "Webhook ocr-devis-st",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -656,
+        80
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REMPLACER_PAR_VOTRE_CREDENTIAL_ID",
+          "name": "Webhook Auth — OCR devis ST"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\nconst errs = [];\nif (!body.fichier_base64) errs.push('fichier_base64');\nif (!body.mime_type) errs.push('mime_type');\nif (!body.contexte || !body.contexte.entite_code) errs.push('contexte.entite_code');\nif (!body.contexte || !body.contexte.client || !body.contexte.client.nom) errs.push('contexte.client');\nif (errs.length) return [{ json: { valid: false, champs: errs } }];\nreturn [{ json: { valid: true, fichier_base64: body.fichier_base64, mime_type: body.mime_type, contexte: body.contexte } }];"
+      },
+      "id": "054b44b1-d2cb-4101-8381-172643919128",
+      "name": "1. Validation payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f8f64100-fdc1-4146-8441-a91e398b9b71",
+      "name": "Payload valide ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, erreur: 'payload_invalide', champs: $json.champs }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "7d4c932f-4a9b-4095-b21a-7811241309e8",
+      "name": "Réponse 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: 'gpt-5.4-mini',\n  input: [\n    {\n      role: 'user',\n      content: [\n        {\n          type: 'input_file',\n          filename: 'devis-st.pdf',\n          file_data: 'data:' + $json.mime_type + ';base64,' + $json.fichier_base64\n        },\n        {\n          type: 'input_text',\n          text: 'Tu es un assistant dextraction de données de devis de sous-traitants suisses. Extrait TOUTES les lignes de prestation de ce document. Pour chaque ligne, retourne : designation (texte de la prestation, concis et professionnel), unite (parmi : Fft, U, pce, m2, ml, h - normalise les variantes comme bl/bloc→Fft, m²→m2, m→ml), quantite (nombre, 0 si non précisé), prix_unitaire (prix unitaire HT en CHF, 0 si non précisé). Retourne aussi le nom du fournisseur. Ignore les lignes de sous-total, total, TVA, conditions de paiement. Réponds STRICTEMENT en JSON sans markdown : {\"fournisseur\":\"string\",\"lignes\":[{\"designation\":\"string\",\"unite\":\"string\",\"quantite\":number,\"prix_unitaire\":number}],\"avertissements\":[\"string\"]}'\n        }\n      ]\n    }\n  ]\n}) }}",
+        "options": {
+          "timeout": 90000
+        }
+      },
+      "id": "9020f0c2-0d32-4d52-a37b-a6fb34a0822b",
+      "name": "2. OCR Vision (OpenAI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REMPLACER_PAR_VOTRE_CREDENTIAL_ID",
+          "name": "OpenAI — votre compte"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('1. Validation payload').first().json;\nconst res = $input.first().json || {};\n\nconst UNITES = ['Fft','U','pce','m2','ml','h'];\nconst normUnite = (u) => {\n  if (!u) return 'Fft';\n  if (UNITES.includes(u)) return u;\n  const m = String(u).toLowerCase().replace('²','2').trim();\n  const map = {\n    'm2':'m2','ml':'ml','m':'ml','h':'h','heure':'h','heures':'h',\n    'u':'U','unite':'U','unité':'U',\n    'pce':'pce','piece':'pce','pièce':'pce','pieces':'pce','pièces':'pce',\n    'fft':'Fft','forfait':'Fft','bl':'Fft','bloc':'Fft','forf':'Fft'\n  };\n  return map[m] || 'Fft';\n};\n\n// Extraire le contenu de la réponse API /v1/responses\nlet content = res?.output?.[0]?.content?.[0]?.text ||\n  res?.choices?.[0]?.message?.content ||\n  res?.content || res?.text || null;\n\nlet raw;\nif (content && typeof content === 'object') {\n  raw = content;\n} else if (typeof content === 'string') {\n  try { raw = JSON.parse(content.replace(/^```(json)?/m,'').replace(/```\\s*$/m,'').trim()); }\n  catch(e) { return [{ json: { ok: false, erreur: 'extraction_echouee' } }]; }\n} else {\n  return [{ json: { ok: false, erreur: 'extraction_echouee' } }];\n}\n\nif (!Array.isArray(raw.lignes) || raw.lignes.length === 0) {\n  return [{ json: { ok: false, erreur: 'aucune_ligne_extraite' } }];\n}\n\nconst avertissements = Array.isArray(raw.avertissements) ? raw.avertissements.map(a => String(a)).slice(0,10) : [];\nconst lignes = [];\n\nfor (const l of raw.lignes) {\n  if (!l || typeof l !== 'object') continue;\n  const designation = String(l.designation || '').trim().slice(0, 300);\n  if (!designation || designation.length < 3) continue;\n  // Exclure les totaux/sous-totaux résiduels\n  if (/^(total|sous-total|montant|tva|ttc|ht net|sous total)/i.test(designation)) continue;\n  const unite = normUnite(l.unite);\n  const quantite = parseFloat(String(l.quantite || '0').replace(/[^0-9.,]/g,'').replace(',','.')) || 0;\n  const prix_unitaire = parseFloat(String(l.prix_unitaire || '0').replace(/[^0-9.,]/g,'').replace(',','.')) || 0;\n  // Garder même si quantite ou prix = 0 (l'utilisateur corrigera)\n  lignes.push({ designation, unite, quantite, prix_unitaire });\n}\n\nif (lignes.length === 0) {\n  return [{ json: { ok: false, erreur: 'aucune_ligne_valide' } }];\n}\n\nreturn [{ json: {\n  ok: true,\n  fournisseur: String(raw.fournisseur || '').trim() || null,\n  lignes,\n  avertissements\n} }];"
+      },
+      "id": "2a16bb1b-6d0e-4144-a697-534fe7b31459",
+      "name": "3. Validation et normalisation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "3bd46f01-ef8f-4b95-9518-c1ef7bc99138",
+      "name": "Réponse JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook ocr-devis-st": {
+      "main": [
+        [
+          {
+            "node": "1. Validation payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Validation payload": {
+      "main": [
+        [
+          {
+            "node": "Payload valide ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload valide ?": {
+      "main": [
+        [
+          {
+            "node": "2. OCR Vision (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Réponse 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. OCR Vision (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "3. Validation et normalisation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Validation et normalisation": {
+      "main": [
+        [
+          {
+            "node": "Réponse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": true
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

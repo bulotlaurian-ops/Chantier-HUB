@@ -1,0 +1,468 @@
+{
+  "name": "Chantier Hub — OCR factures fournisseurs",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ocr-facture",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "n-webhook",
+      "name": "Webhook ocr-facture",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REMPLACER_PAR_VOTRE_CREDENTIAL_ID",
+          "name": "Webhook Auth — OCR facture"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ⬅️ CONFIG : URL du projet Supabase Artisan Pro (ce n'est PAS un secret — la clé service_role reste dans le credential Supabase).\n// Si tu déploies sur un autre projet, change juste cette ligne.\nconst SUPABASE_URL = 'https://VOTRE-PROJET-SUPABASE.supabase.co';\n\nconst body = $input.first().json.body || {};\nconst errs = [];\nif (!body.facture_id) errs.push('facture_id');\nif (!body.fichier_path) errs.push('fichier_path');\nif (!body.bucket) errs.push('bucket');\nif (errs.length) return [{ json: { valid: false, champs: errs } }];\nreturn [{ json: { valid: true, supabaseUrl: SUPABASE_URL, payload: body } }];"
+      },
+      "id": "n-valid",
+      "name": "1. Validation payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1180,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n-if-valid",
+      "name": "Payload valide ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, erreur: 'payload_invalide', champs: $json.champs }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "n-resp-400",
+      "name": "Réponse 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -740,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.supabaseUrl }}/storage/v1/object/{{ $json.payload.bucket }}/{{ encodeURI($json.payload.fichier_path) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "id": "n-download",
+      "name": "2. Download fichier",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -740,
+        200
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "REMPLACER_PAR_VOTRE_CREDENTIAL_ID",
+          "name": "Supabase — votre projet"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $binary && $binary.data ? $binary.data.mimeType : '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n-if-file",
+      "name": "Fichier trouvé ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -520,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, erreur: 'fichier_introuvable' }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "n-resp-file",
+      "name": "Réponse erreur fichier",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -300,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Récupère le binaire téléchargé, encode en data URL, construit le corps de requête OpenAI Vision.\nconst meta = $('1. Validation payload').first().json;\nconst item = $input.first();\nconst binMeta = item.binary && item.binary.data;\nif (!binMeta) return [{ json: { ok: false, erreur: 'fichier_introuvable' } }];\n\nconst buff = await this.helpers.getBinaryDataBuffer(0, 'data');\nconst b64 = buff.toString('base64');\nconst mime = binMeta.mimeType || 'application/pdf';\nconst dataUrl = `data:${mime};base64,${b64}`;\n\nconst prompt = \"Tu es un extracteur de données de factures fournisseurs suisses. À partir de l'image/PDF, renvoie UNIQUEMENT un JSON strict (sans markdown) avec : fournisseur (raison sociale émettrice), numero_facture, date_facture (YYYY-MM-DD), montant_ht (nombre, séparateur décimal point), taux_tva (nombre, ex 8.1). Mets null pour tout champ illisible/absent. N'invente jamais de valeur. N'extrais PAS les lignes de détail.\";\n\n// PDF -> input type \"file\" ; image -> \"image_url\"\nlet userContent;\nif (mime.includes('pdf')) {\n  userContent = [{ type: 'file', file: { filename: 'facture.pdf', file_data: dataUrl } }];\n} else {\n  userContent = [{ type: 'image_url', image_url: { url: dataUrl } }];\n}\n\nconst openaiBody = {\n  model: 'gpt-5.4-mini',\n  response_format: { type: 'json_object' },\n  messages: [\n    { role: 'system', content: prompt },\n    { role: 'user', content: userContent }\n  ]\n};\n\nreturn [{ json: { openaiBody, facture_id: meta.payload.facture_id } }];"
+      },
+      "id": "n-prep",
+      "name": "3. Préparer requête Vision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.openaiBody) }}",
+        "options": {}
+      },
+      "id": "n-vision",
+      "name": "4. OpenAI Vision",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -80,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REMPLACER_PAR_VOTRE_CREDENTIAL_ID",
+          "name": "OpenAI — votre compte"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse la réponse OpenAI, normalise les champs de l'en-tête de facture.\nconst meta = $('3. Préparer requête Vision').first().json;\nconst res = $input.first().json || {};\n\nlet content = res.choices && res.choices[0] && res.choices[0].message && res.choices[0].message.content;\nif (!content) return [{ json: { ok: false, erreur: 'ocr_echoue' } }];\n\nlet raw;\ntry {\n  raw = (typeof content === 'object')\n    ? content\n    : JSON.parse(String(content).replace(/^```(json)?/m, '').replace(/```\\s*$/m, '').trim());\n} catch (e) {\n  return [{ json: { ok: false, erreur: 'ocr_echoue' } }];\n}\n\nconst strOrNull = (v) => (v !== null && v !== undefined && String(v).trim()) ? String(v).trim() : null;\n\nlet montant = Number(String(raw.montant_ht).replace(',', '.'));\nif (!isFinite(montant) || montant <= 0) montant = null;\n\nlet taux = Number(String(raw.taux_tva).replace(',', '.'));\nif (!isFinite(taux)) taux = null;\n\nlet date = null;\nif (raw.date_facture && /^\\d{4}-\\d{2}-\\d{2}$/.test(String(raw.date_facture).trim())) {\n  date = String(raw.date_facture).trim();\n}\n\nconst extracted = {\n  fournisseur: strOrNull(raw.fournisseur),\n  numero_facture: strOrNull(raw.numero_facture),\n  date_facture: date,\n  montant_ht: montant,\n  taux_tva: taux\n};\n\nreturn [{ json: { ok: true, facture_id: meta.facture_id, extracted } }];"
+      },
+      "id": "n-norm",
+      "name": "5. Validation / normalisation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        140,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n-if-ocr",
+      "name": "OCR OK ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        360,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, erreur: $json.erreur || 'llm_indisponible' }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "n-resp-ocr",
+      "name": "Réponse erreur OCR",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        580,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $('1. Validation payload').first().json.supabaseUrl }}/rest/v1/factures_fournisseurs?id=eq.{{ $json.facture_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ fournisseur: $json.extracted.fournisseur, numero_facture: $json.extracted.numero_facture, date: $json.extracted.date_facture, montant_ht: $json.extracted.montant_ht, taux_tva: $json.extracted.taux_tva }) }}",
+        "options": {}
+      },
+      "id": "n-update",
+      "name": "6. UPDATE facture",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        580,
+        380
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "REMPLACER_PAR_VOTRE_CREDENTIAL_ID",
+          "name": "Supabase — votre projet"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, extracted: $('5. Validation / normalisation').first().json.extracted }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "n-resp-ok",
+      "name": "Réponse JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        800,
+        380
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook ocr-facture": {
+      "main": [
+        [
+          {
+            "node": "1. Validation payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Validation payload": {
+      "main": [
+        [
+          {
+            "node": "Payload valide ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload valide ?": {
+      "main": [
+        [
+          {
+            "node": "2. Download fichier",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Réponse 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Download fichier": {
+      "main": [
+        [
+          {
+            "node": "Fichier trouvé ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fichier trouvé ?": {
+      "main": [
+        [
+          {
+            "node": "3. Préparer requête Vision",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Réponse erreur fichier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Préparer requête Vision": {
+      "main": [
+        [
+          {
+            "node": "4. OpenAI Vision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. OpenAI Vision": {
+      "main": [
+        [
+          {
+            "node": "5. Validation / normalisation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Validation / normalisation": {
+      "main": [
+        [
+          {
+            "node": "OCR OK ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OCR OK ?": {
+      "main": [
+        [
+          {
+            "node": "6. UPDATE facture",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Réponse erreur OCR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. UPDATE facture": {
+      "main": [
+        [
+          {
+            "node": "Réponse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": true
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
