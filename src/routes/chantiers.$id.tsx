@@ -6,7 +6,7 @@ import { ConfirmAction } from '@/components/ConfirmAction';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatCHF, formatDate, formatHeures } from '@/lib/format';
+import { formatEUR, formatDate, formatHeures } from '@/lib/format';
 import { usePointages, useTogglePointageComptabilise, useDeletePointage } from '@/lib/queries/pointages';
 import { useParametres, paramNumber } from '@/lib/queries/parametres';
 import { Badge } from '@/components/ui/badge';
@@ -118,7 +118,7 @@ function ChantierDetail() {
               {devis.map(d => (
                 <Link key={d.id} to="/devis/$id" params={{ id: d.id }} className="flex items-center justify-between p-2 rounded hover:bg-muted/40 border">
                   <div className="flex items-center gap-2"><FileText className="w-4 h-4 text-muted-foreground" /><span className="font-mono text-xs">{d.numero}</span></div>
-                  <div className="text-sm num-tabular">{formatCHF(d.total_ttc)}</div>
+                  <div className="text-sm num-tabular">{formatEUR(d.total_ttc)}</div>
                 </Link>
               ))}
             </div>
@@ -209,9 +209,9 @@ function HeuresChantierBloc({ chantierId }: { chantierId: string }) {
                   <td className="px-2 py-2 text-right num-tabular">{formatHeures(l.heures)}</td>
                   <td className="px-2 py-2 text-right num-tabular text-muted-foreground">{formatHeures(l.trajet)}</td>
                   <td className="px-2 py-2 text-right num-tabular text-muted-foreground text-xs whitespace-nowrap">
-                    {formatCHF(l.taux ?? tauxDefaut)}/h{l.taux == null && <span title="Taux non renseigné sur le profil — taux par défaut appliqué" className="ml-0.5">*</span>}
+                    {formatEUR(l.taux ?? tauxDefaut)}/h{l.taux == null && <span title="Taux non renseigné sur le profil — taux par défaut appliqué" className="ml-0.5">*</span>}
                   </td>
-                  <td className={`px-2 py-2 text-right num-tabular ${l.comptabilise ? 'font-medium' : 'line-through'}`}>{formatCHF(l.cout)}</td>
+                  <td className={`px-2 py-2 text-right num-tabular ${l.comptabilise ? 'font-medium' : 'line-through'}`}>{formatEUR(l.cout)}</td>
                   <td className="px-2 py-2 text-right whitespace-nowrap">
                     <button
                       onClick={() => toggle.mutate({ id: l.id, comptabilise: !l.comptabilise }, {
@@ -242,7 +242,7 @@ function HeuresChantierBloc({ chantierId }: { chantierId: string }) {
                 <td className="px-2 py-2 font-semibold" colSpan={2}>Compté dans la marge</td>
                 <td className="px-2 py-2 text-right num-tabular font-semibold">{formatHeures(totalHeures)}</td>
                 <td colSpan={2}></td>
-                <td className="px-2 py-2 text-right num-tabular font-semibold">{formatCHF(totalCout)}</td>
+                <td className="px-2 py-2 text-right num-tabular font-semibold">{formatEUR(totalCout)}</td>
                 <td></td>
               </tr>
               {exclues.length > 0 && (
@@ -250,7 +250,7 @@ function HeuresChantierBloc({ chantierId }: { chantierId: string }) {
                   <td className="px-2 py-2" colSpan={2}>Dont exclu ({exclues.length} pointage{exclues.length > 1 ? 's' : ''})</td>
                   <td className="px-2 py-2 text-right num-tabular">{formatHeures(exclues.reduce((s, l) => s + l.heures, 0))}</td>
                   <td colSpan={2}></td>
-                  <td className="px-2 py-2 text-right num-tabular">{formatCHF(exclues.reduce((s, l) => s + l.cout, 0))}</td>
+                  <td className="px-2 py-2 text-right num-tabular">{formatEUR(exclues.reduce((s, l) => s + l.cout, 0))}</td>
                   <td></td>
                 </tr>
               )}
@@ -313,17 +313,17 @@ function FacturesChantierBloc({ chantierId }: { chantierId: string }) {
                 </div>
                 <div className="flex items-center justify-between mt-1.5 text-sm">
                   <span className="text-xs text-muted-foreground">Montant HT affecté</span>
-                  <span className="num-tabular font-medium">{formatCHF(Number(f.montant_ht_affecte))}</span>
+                  <span className="num-tabular font-medium">{formatEUR(Number(f.montant_ht_affecte))}</span>
                 </div>
               </div>
             ))}
             <div className="pt-3 space-y-1 text-sm">
               <div className="flex items-center justify-between font-semibold">
-                <span>Compté dans la marge</span><span className="num-tabular">{formatCHF(totalValide)}</span>
+                <span>Compté dans la marge</span><span className="num-tabular">{formatEUR(totalValide)}</span>
               </div>
               {enAttente > 0 && (
                 <div className="flex items-center justify-between text-xs text-amber-600 dark:text-amber-400">
-                  <span>Dont à valider (non compté)</span><span className="num-tabular">{formatCHF(enAttente)}</span>
+                  <span>Dont à valider (non compté)</span><span className="num-tabular">{formatEUR(enAttente)}</span>
                 </div>
               )}
             </div>
@@ -351,7 +351,7 @@ function FacturesChantierBloc({ chantierId }: { chantierId: string }) {
                     </td>
                     <td className="px-3 py-2 font-mono text-xs">{f.numero_facture ?? '—'}</td>
                     <td className="px-3 py-2 text-muted-foreground">{f.date ? formatDate(f.date) : '—'}</td>
-                    <td className={`px-3 py-2 text-right num-tabular ${compte(f) ? '' : 'line-through'}`}>{formatCHF(Number(f.montant_ht_affecte))}</td>
+                    <td className={`px-3 py-2 text-right num-tabular ${compte(f) ? '' : 'line-through'}`}>{formatEUR(Number(f.montant_ht_affecte))}</td>
                     <td className="px-3 py-2">
                       <StatutFactureBadge statut={f.statut} />
                       {f.statut !== 'valide' && (
@@ -396,13 +396,13 @@ function FacturesChantierBloc({ chantierId }: { chantierId: string }) {
               <tfoot>
                 <tr className="border-t bg-muted/30 font-semibold">
                   <td className="px-3 py-2" colSpan={3}>Compté dans la marge ({factures.filter(compte).length} facture{factures.filter(compte).length > 1 ? 's' : ''})</td>
-                  <td className="px-3 py-2 text-right num-tabular">{formatCHF(totalValide)}</td>
+                  <td className="px-3 py-2 text-right num-tabular">{formatEUR(totalValide)}</td>
                   <td colSpan={2}></td>
                 </tr>
                 {enAttente > 0 && (
                   <tr className="text-xs text-amber-600 dark:text-amber-400">
                     <td className="px-3 py-2" colSpan={3}>Dont non compté (facture à valider ou montant exclu)</td>
-                    <td className="px-3 py-2 text-right num-tabular">{formatCHF(enAttente)}</td>
+                    <td className="px-3 py-2 text-right num-tabular">{formatEUR(enAttente)}</td>
                     <td colSpan={2}></td>
                   </tr>
                 )}
@@ -436,7 +436,7 @@ function AffecterFactureDialog({ open, onOpenChange, chantierId }: {
     const m = Math.round((Number(montant.replace(',', '.')) || 0) * 100) / 100;
     if (!choisie) return toast.error('Choisis une facture');
     if (m <= 0) return toast.error('Montant invalide');
-    if (facture && m > facture.reste + 0.001) return toast.error(`Il ne reste que ${formatCHF(facture.reste)} à affecter sur cette facture`);
+    if (facture && m > facture.reste + 0.001) return toast.error(`Il ne reste que ${formatEUR(facture.reste)} à affecter sur cette facture`);
     creer.mutate({ facture_id: choisie, chantier_id: chantierId, montant_ht_affecte: m }, {
       onSuccess: () => {
         toast.success('Facture affectée au chantier', {
@@ -469,10 +469,10 @@ function AffecterFactureDialog({ open, onOpenChange, chantierId }: {
                   className={`w-full text-left px-3 py-2 hover:bg-muted/50 ${choisie === f.id ? 'bg-muted' : ''}`}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium text-sm truncate">{f.fournisseur}</span>
-                    <span className="num-tabular text-sm shrink-0">{formatCHF(f.reste)}</span>
+                    <span className="num-tabular text-sm shrink-0">{formatEUR(f.reste)}</span>
                   </div>
                   <div className="text-[11px] text-muted-foreground">
-                    {f.numero_facture ?? '—'} · {f.date ? formatDate(f.date) : '—'} · reste à affecter sur {formatCHF(Number(f.montant_ht))}
+                    {f.numero_facture ?? '—'} · {f.date ? formatDate(f.date) : '—'} · reste à affecter sur {formatEUR(Number(f.montant_ht))}
                     {f.statut === 'a_valider' && ' · à valider'}
                   </div>
                 </button>
@@ -512,7 +512,7 @@ function MargeReelleBloc({ couts }: { couts?: ChantierCouts }) {
         {m.calculable && (
           <span className={`inline-flex items-center gap-2 text-sm font-semibold ${color}`}>
             <span className={`w-2.5 h-2.5 rounded-full ${dot}`} />
-            {formatCHF(a05(m.margeChf!))}
+            {formatEUR(a05(m.margeChf!))}
             {m.margePct != null && <span className="text-xs font-normal text-muted-foreground">({m.margePct.toFixed(1)} %)</span>}
           </span>
         )}
@@ -521,10 +521,10 @@ function MargeReelleBloc({ couts }: { couts?: ChantierCouts }) {
         <div className="text-sm text-muted-foreground"><span className="text-lg font-semibold text-foreground mr-2">—</span>aucun devis accepté (marge non calculable)</div>
       ) : (
         <div className="grid sm:grid-cols-4 gap-4">
-          <Stat label="Référence (devis acceptés)" value={formatCHF(Number(couts?.montant_reference ?? 0))} />
-          <Stat label="Coût main-d'œuvre" value={formatCHF(Number(couts?.cout_mo_reel ?? 0))} />
-          <Stat label="Coût fournisseurs" value={formatCHF(Number(couts?.cout_fournisseurs_reel ?? 0))} />
-          <Stat label="Marge réelle" value={formatCHF(a05(m.margeChf!))} accent={color} sub={m.margePct != null ? `${m.margePct.toFixed(1)} %` : undefined} />
+          <Stat label="Référence (devis acceptés)" value={formatEUR(Number(couts?.montant_reference ?? 0))} />
+          <Stat label="Coût main-d'œuvre" value={formatEUR(Number(couts?.cout_mo_reel ?? 0))} />
+          <Stat label="Coût fournisseurs" value={formatEUR(Number(couts?.cout_fournisseurs_reel ?? 0))} />
+          <Stat label="Marge réelle" value={formatEUR(a05(m.margeChf!))} accent={color} sub={m.margePct != null ? `${m.margePct.toFixed(1)} %` : undefined} />
         </div>
       )}
     </CardContent></Card>

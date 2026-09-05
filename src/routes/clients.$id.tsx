@@ -6,7 +6,7 @@ import { ConfirmAction } from '@/components/ConfirmAction';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { formatCHF, formatCHFShort, formatDate } from '@/lib/format';
+import { formatEUR, formatEURShort, formatDate } from '@/lib/format';
 import { ClientAvatar, NewClientDialog } from './clients.index';
 import { useClient, useArchiveClient, useDeleteClient } from '@/lib/queries/clients';
 import { useDevisList } from '@/lib/queries/devis';
@@ -146,7 +146,7 @@ function ClientFiche() {
 
         <TabsContent value="overview" className="mt-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <Kpi label="Total CA généré" value={formatCHFShort(totalCA)} />
+            <Kpi label="Total CA généré" value={formatEURShort(totalCA)} />
             <Kpi label="Marge moyenne" value={`${tauxMoy.toFixed(1)}%`} />
             <Kpi label="Devis acceptés / envoyés" value={`${devisAcc} / ${devisEnv}`} />
             <Kpi label="Premier contact" value={formatDate(c.created_at)} />
@@ -171,7 +171,7 @@ function ClientFiche() {
                       <td className="px-4 py-2"><Link to="/devis/$id" params={{ id: d.id }} className="font-mono text-xs hover:underline">{d.numero}</Link></td>
                       <td className="px-4 py-2 text-xs text-muted-foreground">{formatDate(d.date_creation)}</td>
                       <td className="px-4 py-2"><StatusPill>{d.statut}</StatusPill></td>
-                      <td className="px-4 py-2 text-right num-tabular">{formatCHF(d.total_ttc)}</td>
+                      <td className="px-4 py-2 text-right num-tabular">{formatEUR(d.total_ttc)}</td>
                     </tr>
                   ))}
                   {devis.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground text-sm">Aucun devis pour ce client.</td></tr>}

@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/Badges';
 import { EntiteChip } from '@/components/ChantierBadges';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatCHF, formatCHFShort, formatDate, formatHeures } from '@/lib/format';
+import { formatEUR, formatEURShort, formatDate, formatHeures } from '@/lib/format';
 import { FileText, Hammer, Clock, TrendingUp, Receipt, AlertTriangle, ArrowRight, Loader2 } from 'lucide-react';
 import { useDashboardKpis, periodeBornes, type Periode } from '@/lib/queries/dashboard';
 import { useChantiersList, useChantierCoutsReels, evalMarge, type MargeEval } from '@/lib/queries/chantiers';
@@ -88,12 +88,12 @@ function VueStaff({ isStaff }: { isStaff: boolean }) {
         <>
           {/* Ligne KPI principale */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <Kpi icon={<TrendingUp className="w-4 h-4" />} label="CA HT accepté (période)" value={formatCHFShort(d?.ca_ht_accepte ?? 0)} accent="blue" />
+            <Kpi icon={<TrendingUp className="w-4 h-4" />} label="CA HT accepté (période)" value={formatEURShort(d?.ca_ht_accepte ?? 0)} accent="blue" />
             <Kpi icon={<FileText className="w-4 h-4" />} label="Taux d'acceptation" value={d?.taux_acceptation == null ? '—' : `${d.taux_acceptation.toFixed(1)} %`} delta="acceptés / (acc.+ref.+exp.)" accent="blue" />
             <Kpi
               icon={<TrendingUp className="w-4 h-4" />}
               label="Marge réelle (CHF)"
-              value={formatCHFShort(a05(m?.marge_chf ?? 0))}
+              value={formatEURShort(a05(m?.marge_chf ?? 0))}
               delta={m ? `${m.pct_global == null ? '—' : m.pct_global.toFixed(1) + ' %'} · ${m.nb_non_calculables} non calculable${m.nb_non_calculables > 1 ? 's' : ''}` : undefined}
               accent="emerald"
             />
@@ -103,7 +103,7 @@ function VueStaff({ isStaff }: { isStaff: boolean }) {
           {/* Ligne KPI secondaire */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <Kpi icon={<Clock className="w-4 h-4" />} label="Heures saisies (période)" value={formatHeures(h?.travaillees ?? 0)} delta={`+ ${formatHeures(h?.trajet ?? 0)} trajet`} accent="amber" />
-            <Kpi icon={<Receipt className="w-4 h-4" />} label="Factures à valider" value={String(at?.factures_a_valider_nb ?? 0)} delta={formatCHF(at?.factures_a_valider_montant ?? 0) + ' HT'} accent="amber" />
+            <Kpi icon={<Receipt className="w-4 h-4" />} label="Factures à valider" value={String(at?.factures_a_valider_nb ?? 0)} delta={formatEUR(at?.factures_a_valider_montant ?? 0) + ' HT'} accent="amber" />
             <Kpi icon={<AlertTriangle className="w-4 h-4" />} label="Devis envoyés > 30 j" value={String(at?.devis_envoyes_30j ?? 0)} delta="sans réponse" accent="amber" />
             <Card className="shadow-sm border-l-4 border-l-blue-500 bg-blue-50/60 dark:bg-blue-950/20">
               <CardContent className="p-4">
@@ -139,7 +139,7 @@ function VueStaff({ isStaff }: { isStaff: boolean }) {
                       {ev.calculable ? (
                         <span className={`inline-flex items-center gap-1.5 text-sm font-semibold num-tabular ${margeColor(ev.niveau)}`}>
                           <span className={`w-2 h-2 rounded-full ${margeDot(ev.niveau)}`} />
-                          {formatCHF(a05(ev.margeChf!))}{ev.margePct != null && <span className="text-[11px] font-normal text-muted-foreground">({ev.margePct.toFixed(1)} %)</span>}
+                          {formatEUR(a05(ev.margeChf!))}{ev.margePct != null && <span className="text-[11px] font-normal text-muted-foreground">({ev.margePct.toFixed(1)} %)</span>}
                         </span>
                       ) : <span className="text-xs text-muted-foreground" title="Aucun devis accepté">marge —</span>}
                     </div>

@@ -3,7 +3,7 @@ import { PageHeader } from '@/components/Badges';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { formatCHF, formatHeures, formatDate } from '@/lib/format';
+import { formatEUR, formatHeures, formatDate } from '@/lib/format';
 import { Search, Trash2, Plus, ChevronRight, ChevronDown, Copy, GripVertical, Loader2, Coins, Check, X, Inbox, FolderTree, List, Link as LinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, useMemo, useEffect } from 'react';
@@ -204,9 +204,9 @@ function PrestationLigne({ p, isAdmin, isStaff }: { p: Prestation; isAdmin: bool
       </td>
       <td className="px-3 py-2 text-xs">{p.unite}</td>
       <td className="px-3 py-2 text-right num-tabular">
-        <div>{prix.principal !== 0 ? formatCHF(prix.principal) : '—'}</div>
+        <div>{prix.principal !== 0 ? formatEUR(prix.principal) : '—'}</div>
         {prix.secondaire != null && (
-          <div className="text-[10px] text-muted-foreground">PA : {formatCHF(prix.secondaire)}</div>
+          <div className="text-[10px] text-muted-foreground">PA : {formatEUR(prix.secondaire)}</div>
         )}
       </td>
       <td className="px-3 py-2">
@@ -251,7 +251,7 @@ function TarifsDialog({ prestation }: { prestation: Prestation }) {
       <DialogContent className="max-w-2xl">
         <DialogHeader><DialogTitle>Grille tarifs — {prestation.libelle}</DialogTitle></DialogHeader>
         <div className="text-xs text-muted-foreground">
-          Prix de référence : <span className="font-medium text-foreground">{formatCHF(prestation.prix_vente_reference)}</span>
+          Prix de référence : <span className="font-medium text-foreground">{formatEUR(prestation.prix_vente_reference)}</span>
           {prestation.code ? ` · réf. ${prestation.code}` : ''}
         </div>
         <TarifsGrid
@@ -611,7 +611,7 @@ function NouvellePrestationDialog() {
                 <div key={i} className="flex items-center gap-2 p-2 bg-muted/30 rounded">
                   <GripVertical className="w-3 h-3 text-muted-foreground" />
                   <span className="flex-1 text-sm">{p.libelle}</span>
-                  <span className="text-xs num-tabular w-24 text-right">{formatCHF(p.prix)}</span>
+                  <span className="text-xs num-tabular w-24 text-right">{formatEUR(p.prix)}</span>
                   <span className="text-xs num-tabular w-16 text-right">{formatHeures(p.temps)}</span>
                   <button onClick={() => move(i, -1)} className="text-xs text-muted-foreground hover:text-foreground">▲</button>
                   <button onClick={() => move(i, 1)} className="text-xs text-muted-foreground hover:text-foreground">▼</button>
@@ -627,7 +627,7 @@ function NouvellePrestationDialog() {
             </div>
             {postes.length > 0 && (
               <div className="mt-2 text-xs text-muted-foreground text-right">
-                Total prestation : <span className="num-tabular font-medium text-foreground">{formatCHF(total)}</span> · {formatHeures(tempsTot)}
+                Total prestation : <span className="num-tabular font-medium text-foreground">{formatEUR(total)}</span> · {formatHeures(tempsTot)}
               </div>
             )}
           </div>

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatCHF, formatDate, pct } from '@/lib/format';
+import { formatEUR, formatDate, pct } from '@/lib/format';
 import { useDevis, useUpdateDevis, useUpdateDevisStatut, useDeleteDevis, useArchiveDevis, useDuplicateDevis, useCreateVersionDevis, useVersionsDevis, numeroVersion, type DevisRow, type DevisDetail } from '@/lib/queries/devis';
 import { useConditionsPaiement } from '@/lib/queries/conditions';
 import { telechargerDevisPdf } from '@/lib/pdf';
@@ -214,8 +214,8 @@ function DevisDetail() {
                     <td className="px-3 py-2"><span className={l.est_titre ? 'font-semibold' : ''}>{l.libelle}{l.est_option ? ' (option)' : ''}</span></td>
                     <td className="px-3 py-2 text-right num-tabular">{l.quantite}</td>
                     <td className="px-3 py-2">{l.unite}</td>
-                    <td className="px-3 py-2 text-right num-tabular">{formatCHF(l.prix_unitaire_ht)}</td>
-                    <td className="px-3 py-2 text-right num-tabular">{formatCHF(l.total_ht)}</td>
+                    <td className="px-3 py-2 text-right num-tabular">{formatEUR(l.prix_unitaire_ht)}</td>
+                    <td className="px-3 py-2 text-right num-tabular">{formatEUR(l.total_ht)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -235,17 +235,17 @@ function DevisDetail() {
           </Card>
           <Card>
             <CardContent className="p-4 space-y-1 text-sm">
-              <Row label="Total HT" value={formatCHF(d.total_ht)} />
-              <Row label="TVA" value={formatCHF(d.total_tva)} />
-              <Row label="Total TTC" value={formatCHF(d.total_ttc)} bold />
+              <Row label="Total HT" value={formatEUR(d.total_ht)} />
+              <Row label="TVA" value={formatEUR(d.total_tva)} />
+              <Row label="Total TTC" value={formatEUR(d.total_ttc)} bold />
             </CardContent>
           </Card>
           {/* Marge dérivée (affichée, jamais validée en amont — §5) */}
           <Card>
             <CardContent className="p-4 space-y-1 text-sm">
               <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Marge (dérivée)</div>
-              <Row label="Coût de revient" value={formatCHF(d.cout_revient_total)} />
-              <Row label="Marge estimée" value={formatCHF(d.marge)} bold />
+              <Row label="Coût de revient" value={formatEUR(d.cout_revient_total)} />
+              <Row label="Marge estimée" value={formatEUR(d.marge)} bold />
               <Row label="Taux de marge" value={d.total_ht > 0 && d.taux_marge != null ? pct(d.taux_marge, 1) : '—'} />
             </CardContent>
           </Card>

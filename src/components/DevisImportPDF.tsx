@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { FileUp, Loader2, Trash2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatCHF } from '@/lib/format';
+import { formatEUR } from '@/lib/format';
 import type { Tables } from '@/lib/database.types';
 import { callOcrDevisST, messageErreurIA, DevisIAError, type DevisIAContexte, type LigneDevisST } from '@/lib/devis-ia';
 import { ligneLibre, useAjouterPrestationBiblio, type LigneDevisChamps } from '@/lib/queries/prestations';
@@ -186,7 +186,7 @@ export function DevisImportPDF({ contexte, tauxStandard, pret, onInserer }: {
 
               {preview.lignes.length > 0 && (
                 <div className="text-right text-xs text-muted-foreground">
-                  Total lignes (HT, indicatif) : <span className="num-tabular font-medium text-foreground">{formatCHF(preview.lignes.reduce((s, l) => s + (l.quantite || 0) * (l.prix || 0), 0))}</span>
+                  Total lignes (HT, indicatif) : <span className="num-tabular font-medium text-foreground">{formatEUR(preview.lignes.reduce((s, l) => s + (l.quantite || 0) * (l.prix || 0), 0))}</span>
                 </div>
               )}
             </div>

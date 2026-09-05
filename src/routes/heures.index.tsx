@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ConfirmAction } from '@/components/ConfirmAction';
-import { formatCHFShort, formatDate, formatHeures, isoDate, startOfWeek, addDays } from '@/lib/format';
+import { formatEURShort, formatDate, formatHeures, isoDate, startOfWeek, addDays } from '@/lib/format';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash2, Pencil, ChevronLeft, ChevronRight, Clock, CalendarDays } from 'lucide-react';
 import {
@@ -545,7 +545,7 @@ function VueStaff({ readOnly }: { readOnly: boolean }) {
                         </div>
                         <div className="text-sm font-medium mt-0.5 truncate">{ch.nom}</div>
                         <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground num-tabular">
-                          <span>{formatHeures(heures)} (semaine)</span><span>{formatCHFShort(cout)} MO</span>
+                          <span>{formatHeures(heures)} (semaine)</span><span>{formatEURShort(cout)} MO</span>
                         </div>
                       </button>
                     ))}
@@ -568,7 +568,7 @@ function VueStaff({ readOnly }: { readOnly: boolean }) {
                           <td className="px-3 py-2">{ch.nom}</td>
                           <td className="px-3 py-2"><EntiteChip entite={ch.entite} /></td>
                           <td className="px-3 py-2 text-right num-tabular">{formatHeures(heures)}</td>
-                          <td className="px-3 py-2 text-right num-tabular">{formatCHFShort(cout)}</td>
+                          <td className="px-3 py-2 text-right num-tabular">{formatEURShort(cout)}</td>
                         </tr>
                       ))}
                     </tbody>

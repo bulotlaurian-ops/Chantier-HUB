@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Mic, Square, Loader2, Trash2, Sparkles, Keyboard, X, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatCHF } from '@/lib/format';
+import { formatEUR } from '@/lib/format';
 import type { Tables } from '@/lib/database.types';
 import {
   startRecording, callDevisIA, messageErreurIA, DevisIAError,
@@ -338,7 +338,7 @@ export function DevisIA(props: DevisIAProps) {
                             <div className="min-w-0 md:w-24">
                               <div className="text-[10px] text-muted-foreground text-center">PU HT</div>
                               {resolu != null ? (
-                                <div className="text-sm text-right py-1.5 num-tabular" title="Résolu via le tarif de la catégorie du client">{formatCHF(resolu)}</div>
+                                <div className="text-sm text-right py-1.5 num-tabular" title="Résolu via le tarif de la catégorie du client">{formatEUR(resolu)}</div>
                               ) : (
                                 <Input type="number" step="0.05" value={pl.prixManuel} onChange={(e) => setPv(pl.uid, { prixManuel: Number(e.target.value) })} className="h-8 text-right text-sm" placeholder="à saisir" />
                               )}

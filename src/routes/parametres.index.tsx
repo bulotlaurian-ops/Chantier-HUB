@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { ShieldCheck, User, Building2, Calculator, Percent, Clock as ClockIcon, Settings as SettingsIcon, Users as UsersIcon, RotateCcw } from 'lucide-react';
-import { formatCHF } from '@/lib/format';
+import { formatEUR } from '@/lib/format';
 import { useParametres, paramNumber, useUpdateParametre } from '@/lib/queries/parametres';
 import { useProfiles, useProfilesActifs, useUpdateTauxHoraire, useUpdateRole, useCreerUtilisateur, useReinitialiserMotDePasse, useSupprimerUtilisateur, useUpdateActif, useIdentifiants, type ProfileTaux, type ProfileRow } from '@/lib/queries/profiles';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -231,7 +231,7 @@ function TauxHoraireDefautCard() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Appliqué à tout employé sans taux individuel. Coût chargé indicatif ≈ {formatCHF(defaut * 1.25)}/h (FG ×1.25).
+              Appliqué à tout employé sans taux individuel. Coût chargé indicatif ≈ {formatEUR(defaut * 1.25)}/h (FG ×1.25).
             </p>
           </>
         )}
@@ -538,7 +538,7 @@ function TauxParEmployeCard() {
           </div>
         )}
         <p className="text-xs text-muted-foreground italic px-3 py-3">
-          Sans taux individuel, le taux par défaut ({formatCHF(defaut)}/h) s'applique automatiquement au calcul de marge.
+          Sans taux individuel, le taux par défaut ({formatEUR(defaut)}/h) s'applique automatiquement au calcul de marge.
         </p>
       </CardContent>
     </Card>

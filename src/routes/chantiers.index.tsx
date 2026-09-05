@@ -13,7 +13,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CLE_BROUILLON_CHANTIER_GLOBAL, lireBrouillon, ecrireBrouillon, effacerBrouillon } from '@/lib/brouillon';
 import { todayIso } from '@/lib/store';
-import { addDays, abregeVille, formatCHF } from '@/lib/format';
+import { addDays, abregeVille, formatEUR } from '@/lib/format';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useChantiersList, useCreateChantier, useArchiveChantier, useChantierCoutsReels, evalMarge, type MargeEval } from '@/lib/queries/chantiers';
 import { useDevisList } from '@/lib/queries/devis';
@@ -98,7 +98,7 @@ function ChantiersList() {
                     <div className="flex items-center justify-between mt-1.5">
                       <EntiteChip entite={c.entite} />
                       {!isOuvrier
-                        ? (ev.calculable ? <span className={`num-tabular text-sm font-medium ${margeColor(ev.niveau)}`}>{formatCHF(a05(ev.margeChf!))}{ev.margePct != null ? ` · ${ev.margePct.toFixed(1)} %` : ''}</span> : <span className="text-xs text-muted-foreground">marge —</span>)
+                        ? (ev.calculable ? <span className={`num-tabular text-sm font-medium ${margeColor(ev.niveau)}`}>{formatEUR(a05(ev.margeChf!))}{ev.margePct != null ? ` · ${ev.margePct.toFixed(1)} %` : ''}</span> : <span className="text-xs text-muted-foreground">marge —</span>)
                         : <span className="text-xs text-muted-foreground num-tabular">{nbDevis} devis</span>}
                     </div>
                   </Link>
@@ -156,7 +156,7 @@ function ChantiersList() {
                         <td className="px-4 py-3 text-right num-tabular">
                           {ev.calculable ? (
                             <span className={`font-medium ${margeColor(ev.niveau)}`}>
-                              {formatCHF(a05(ev.margeChf!))}
+                              {formatEUR(a05(ev.margeChf!))}
                               {ev.margePct != null && <span className="block text-[11px] font-normal text-muted-foreground">{ev.margePct.toFixed(1)} %</span>}
                             </span>
                           ) : <span className="text-muted-foreground" title="Aucun devis accepté">—</span>}

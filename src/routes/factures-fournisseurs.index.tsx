@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ConfirmAction } from '@/components/ConfirmAction';
 import { Upload, Search, FileText, CheckCircle2, Clock, Eye, Plus, Trash2, Pencil, Loader2, Lock } from 'lucide-react';
-import { formatCHF, formatDate } from '@/lib/format';
+import { formatEUR, formatDate } from '@/lib/format';
 import { toast } from 'sonner';
 import {
   useFactures, useCreateFacture, useUpdateFacture, useValiderFacture, useDeleteFacture,
@@ -104,7 +104,7 @@ function FacturesPage({ isAdmin }: { isAdmin: boolean }) {
     }
     const ecart = r2(Number(f.montant_ht) - sommeRepartie(f));
     if (Math.abs(ecart) > 0.001) {
-      toast.error('Validation impossible', { description: `La répartition (${formatCHF(sommeRepartie(f))}) doit égaler le montant HT (${formatCHF(Number(f.montant_ht))}). Écart : ${formatCHF(ecart)}.` });
+      toast.error('Validation impossible', { description: `La répartition (${formatEUR(sommeRepartie(f))}) doit égaler le montant HT (${formatEUR(Number(f.montant_ht))}). Écart : ${formatEUR(ecart)}.` });
       return;
     }
     valider.mutate(f.id, {
@@ -133,7 +133,7 @@ function FacturesPage({ isAdmin }: { isAdmin: boolean }) {
         </CardContent></Card>
         <Card><CardContent className="p-4">
           <div className="text-xs text-muted-foreground uppercase tracking-wide">Montant cumulé TTC</div>
-          <div className="text-2xl font-semibold mt-1">{formatCHF(kpis.ttc)}</div>
+          <div className="text-2xl font-semibold mt-1">{formatEUR(kpis.ttc)}</div>
         </CardContent></Card>
       </div>
 
@@ -199,7 +199,7 @@ function FacturesPage({ isAdmin }: { isAdmin: boolean }) {
                     </div>
                     <div className="flex items-center justify-between mt-1.5 text-xs">
                       <span className="text-muted-foreground truncate">{nbCh === 0 ? 'non réparti' : nbCh === 1 ? (premierCh?.reference ?? '—') : `${nbCh} chantiers`}{!equilibre && nbCh > 0 ? ' · écart' : ''}</span>
-                      <span className="num-tabular font-medium">{formatCHF(Number(f.montant_ttc))}</span>
+                      <span className="num-tabular font-medium">{formatEUR(Number(f.montant_ttc))}</span>
                     </div>
                     <div className="flex items-center justify-end gap-1 mt-2">
                       <Button size="sm" variant="ghost" title="Aperçu du fichier" onClick={() => apercu(f)} disabled={!f.fichier_url}><Eye className="w-4 h-4" /></Button>
@@ -266,10 +266,10 @@ function FacturesPage({ isAdmin }: { isAdmin: boolean }) {
                         ) : <span className="text-xs">{nbCh} chantiers</span>}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <div className={`tabular-nums ${equilibre ? '' : 'text-amber-600 dark:text-amber-400 font-medium'}`}>{formatCHF(repTotal)}</div>
-                      <div className="text-[11px] text-muted-foreground tabular-nums">/ {formatCHF(Number(f.montant_ht))}{!equilibre && ` · écart ${formatCHF(ecart)}`}</div>
+                      <div className={`tabular-nums ${equilibre ? '' : 'text-amber-600 dark:text-amber-400 font-medium'}`}>{formatEUR(repTotal)}</div>
+                      <div className="text-[11px] text-muted-foreground tabular-nums">/ {formatEUR(Number(f.montant_ht))}{!equilibre && ` · écart ${formatEUR(ecart)}`}</div>
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums font-medium">{formatCHF(Number(f.montant_ttc))}</td>
+                    <td className="px-4 py-3 text-right tabular-nums font-medium">{formatEUR(Number(f.montant_ttc))}</td>
                     <td className="px-4 py-3">
                       {f.statut === 'valide'
                         ? <Badge variant="outline" className="border-emerald-300 text-emerald-700 bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:bg-emerald-950/40 gap-1"><CheckCircle2 className="w-3 h-3" />Validée</Badge>
@@ -525,7 +525,7 @@ function FactureDialog({ open, onOpenChange, facture, chantiers }: {
           {/* 3) Total TTC */}
           <div className="rounded-md bg-muted/40 p-3 flex justify-between items-center text-sm">
             <span className="text-muted-foreground">Total TTC</span>
-            <span className="text-lg font-semibold tabular-nums">{formatCHF(ttc)}</span>
+            <span className="text-lg font-semibold tabular-nums">{formatEUR(ttc)}</span>
           </div>
 
           {/* 4) Répartition */}
@@ -560,8 +560,8 @@ function FactureDialog({ open, onOpenChange, facture, chantiers }: {
               ))}
             </div>
             <div className={`mt-2 flex flex-wrap gap-x-3 gap-y-1 justify-between items-center text-sm rounded-md p-2 ${equilibre ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'}`}>
-              <span>Réparti : <span className="tabular-nums font-medium">{formatCHF(totalReparti)}</span> / {formatCHF(r2(ht))}</span>
-              <span className="tabular-nums">{equilibre ? 'Équilibré ✓' : `Écart : ${formatCHF(ecart)}`}</span>
+              <span>Réparti : <span className="tabular-nums font-medium">{formatEUR(totalReparti)}</span> / {formatEUR(r2(ht))}</span>
+              <span className="tabular-nums">{equilibre ? 'Équilibré ✓' : `Écart : ${formatEUR(ecart)}`}</span>
             </div>
             {!equilibre && <p className="text-[11px] text-muted-foreground mt-1">Enregistrement possible en brouillon. La validation exigera une répartition égale au montant HT.</p>}
           </div>

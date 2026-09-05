@@ -15,7 +15,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { todayIso } from '@/lib/store';
-import { addDays, formatCHF, pct } from '@/lib/format';
+import { addDays, formatEUR, pct } from '@/lib/format';
 import { useEntites } from '@/lib/queries/entites';
 import { useClients } from '@/lib/queries/clients';
 import { useChantiersList } from '@/lib/queries/chantiers';
@@ -575,7 +575,7 @@ function NouveauDevis() {
                             <td className="px-2 py-1.5"><Input type="number" step="0.01" value={l.quantite} onChange={e => patchLigne(l.uid, { quantite: Number(e.target.value) })} className="h-8 text-right text-sm" /></td>
                             <td className="px-2 py-1.5"><Input type="number" step="0.05" value={l.prix_unitaire_ht} onChange={e => patchLigne(l.uid, { prix_unitaire_ht: Number(e.target.value) })} className="h-8 text-right text-sm" /></td>
                             <td className="px-2 py-1.5 text-right num-tabular text-xs text-muted-foreground leading-8">{l.taux_tva.toFixed(2)}</td>
-                            <td className="px-2 py-1.5 text-right num-tabular leading-8">{formatCHF(r2(l.quantite * l.prix_unitaire_ht))}</td>
+                            <td className="px-2 py-1.5 text-right num-tabular leading-8">{formatEUR(r2(l.quantite * l.prix_unitaire_ht))}</td>
                             <td className="px-2 py-1.5 text-right whitespace-nowrap leading-8">
                               <button onClick={() => ouvrirAjoutBiblio(l)} title="Ajouter à la bibliothèque" className="mr-2 text-muted-foreground hover:text-accent opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"><BookmarkPlus className="w-3.5 h-3.5 inline" /></button>
                               <button onClick={() => supprimerLigne(l.uid)} className="text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5 inline" /></button>
@@ -601,16 +601,16 @@ function NouveauDevis() {
         {/* Récapitulatif + marge */}
         <div className="space-y-3">
           <Card><CardContent className="p-4 space-y-1 text-sm">
-            <Row label="Total HT" value={formatCHF(totaux.total_ht)} />
-            <Row label="TVA" value={formatCHF(totaux.total_tva)} />
-            {Math.abs(totaux.arrondi) > 0.0001 && <Row label="Arrondi (0.05)" value={formatCHF(totaux.arrondi)} />}
-            <Row label="Total TTC" value={formatCHF(totaux.total_ttc)} bold />
+            <Row label="Total HT" value={formatEUR(totaux.total_ht)} />
+            <Row label="TVA" value={formatEUR(totaux.total_tva)} />
+            {Math.abs(totaux.arrondi) > 0.0001 && <Row label="Arrondi (0.05)" value={formatEUR(totaux.arrondi)} />}
+            <Row label="Total TTC" value={formatEUR(totaux.total_ttc)} bold />
           </CardContent></Card>
 
           <Card><CardContent className="p-4 space-y-1 text-sm">
             <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Marge estimée</div>
-            <Row label="Coût de revient" value={formatCHF(totaux.cout_revient_total)} />
-            <Row label="Marge estimée" value={formatCHF(totaux.marge_estimee)} bold />
+            <Row label="Coût de revient" value={formatEUR(totaux.cout_revient_total)} />
+            <Row label="Marge estimée" value={formatEUR(totaux.marge_estimee)} bold />
             <div className="flex justify-between items-center pt-1">
               <span className="text-muted-foreground text-xs">Taux de marge</span>
               <span className={`text-lg font-semibold num-tabular ${margeColor}`}>{totaux.total_ht > 0 ? pct(totaux.taux_marge, 1) : '—'}</span>
@@ -700,10 +700,10 @@ function NouveauDevis() {
                           {!l.est_titre && positions.get(l.uid) != null && <span className="text-muted-foreground mr-1.5 num-tabular">{positions.get(l.uid)}.</span>}
                           {l.libelle || (l.est_titre ? 'Titre de catégorie' : 'Sans libellé')}
                         </div>
-                        {!l.est_titre && <div className="text-sm text-muted-foreground mt-0.5 num-tabular">{l.quantite} {normUnite(l.unite)} × {formatCHF(l.prix_unitaire_ht)}</div>}
+                        {!l.est_titre && <div className="text-sm text-muted-foreground mt-0.5 num-tabular">{l.quantite} {normUnite(l.unite)} × {formatEUR(l.prix_unitaire_ht)}</div>}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        {!l.est_titre && <span className="num-tabular font-semibold mr-1">{formatCHF(r2(l.quantite * l.prix_unitaire_ht))}</span>}
+                        {!l.est_titre && <span className="num-tabular font-semibold mr-1">{formatEUR(r2(l.quantite * l.prix_unitaire_ht))}</span>}
                         <button type="button" onClick={(e) => { e.stopPropagation(); deplacerLigne(l.uid, -1); }} className="p-1 text-muted-foreground hover:text-foreground" title="Monter"><ChevronUp className="w-4 h-4" /></button>
                         <button type="button" onClick={(e) => { e.stopPropagation(); deplacerLigne(l.uid, 1); }} className="p-1 text-muted-foreground hover:text-foreground" title="Descendre"><ChevronDown className="w-4 h-4" /></button>
                         {!l.est_titre && <button type="button" onClick={(e) => { e.stopPropagation(); ouvrirAjoutBiblio(l); }} title="Ajouter à la bibliothèque" className="p-1 text-muted-foreground hover:text-accent"><BookmarkPlus className="w-4 h-4" /></button>}
@@ -713,10 +713,10 @@ function NouveauDevis() {
                   ))}
                 </div>
                 <div className="rounded-md border p-3 text-sm space-y-1">
-                  <Row label="Total HT" value={formatCHF(totaux.total_ht)} />
-                  <Row label="TVA 8.1 %" value={formatCHF(totaux.total_tva)} />
-                  {Math.abs(totaux.arrondi) > 0.0001 && <Row label="Arrondi (0.05)" value={formatCHF(totaux.arrondi)} />}
-                  <Row label="Total TTC" value={formatCHF(totaux.total_ttc)} bold />
+                  <Row label="Total HT" value={formatEUR(totaux.total_ht)} />
+                  <Row label="TVA 8.1 %" value={formatEUR(totaux.total_tva)} />
+                  {Math.abs(totaux.arrondi) > 0.0001 && <Row label="Arrondi (0.05)" value={formatEUR(totaux.arrondi)} />}
+                  <Row label="Total TTC" value={formatEUR(totaux.total_ttc)} bold />
                 </div>
                 <div>
                   <Label className="text-xs uppercase text-muted-foreground">Notes et remarques</Label>
@@ -838,7 +838,7 @@ function LigneEditDialog({ ligne, onClose, onSave }: {
                 <div><Label>Quantité</Label><Input type="number" step="0.01" value={qte} onChange={(e) => setQte(Number(e.target.value))} className="mt-1 h-11 num-tabular" /></div>
                 <div><Label>PU HT</Label><Input type="number" step="0.05" value={pu} onChange={(e) => setPu(Number(e.target.value))} className="mt-1 h-11 num-tabular" /></div>
               </div>
-              <div className="text-right text-xs text-muted-foreground">Total HT : <span className="num-tabular font-medium text-foreground">{formatCHF(r2(qte * pu))}</span></div>
+              <div className="text-right text-xs text-muted-foreground">Total HT : <span className="num-tabular font-medium text-foreground">{formatEUR(r2(qte * pu))}</span></div>
             </>
           )}
         </div>

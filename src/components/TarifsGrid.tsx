@@ -3,7 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
-import { formatCHF } from '@/lib/format';
+import { formatEUR } from '@/lib/format';
 import { prixDepuisTarif, type ModeTarif } from '@/lib/queries/prestations';
 import type { CategorieTarifaire } from '@/lib/queries/categories';
 
@@ -46,7 +46,7 @@ export function TarifsGrid({
             <tr key={cat.id} className="border-b last:border-0">
               <td className="px-2 py-2 font-medium">{cat.libelle}</td>
               <td className="px-2 py-2 text-xs text-muted-foreground" colSpan={2}>Prix de référence (base)</td>
-              <td className="px-2 py-2 text-right num-tabular font-medium">{formatCHF(prixReference)}</td>
+              <td className="px-2 py-2 text-right num-tabular font-medium">{formatEUR(prixReference)}</td>
               <td></td>
             </tr>
           ) : (
@@ -96,7 +96,7 @@ function TarifRow({
         <Input type="number" step="0.01" value={valeur} onChange={(e) => setValeur(Number(e.target.value))} className="h-8 text-right text-xs" />
       </td>
       <td className="px-2 py-1.5 text-right num-tabular">
-        {formatCHF(prix)}
+        {formatEUR(prix)}
         {!current && <div className="text-[10px] text-muted-foreground">prix réf. appliqué</div>}
       </td>
       <td className="px-2 py-1.5 text-right whitespace-nowrap">

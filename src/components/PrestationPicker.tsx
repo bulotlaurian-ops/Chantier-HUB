@@ -6,7 +6,7 @@ import { MultiSelectFiltre } from '@/components/MultiSelectFiltre';
 import { AjouterBiblioDialog } from '@/components/AjouterBiblioDialog';
 import { useFiltresPrestation, grouperParFamille } from '@/lib/prestations-filtres';
 import { prixAffichage, type Prestation } from '@/lib/queries/prestations';
-import { formatCHF } from '@/lib/format';
+import { formatEUR } from '@/lib/format';
 
 // Sélecteur de prestation pour le devis : mêmes filtres que la bibliothèque
 // (recherche + entité/fournisseur/famille) + résultats groupés par famille.
@@ -77,9 +77,9 @@ export function PrestationPicker({ prestations, entitePreselection, onChoisir }:
                       </span>
                     </span>
                     <span className="text-right shrink-0">
-                      <span className="block num-tabular text-xs">{prix.principal !== 0 ? formatCHF(prix.principal) : '—'}</span>
+                      <span className="block num-tabular text-xs">{prix.principal !== 0 ? formatEUR(prix.principal) : '—'}</span>
                       {prix.secondaire != null && (
-                        <span className="block num-tabular text-[10px] text-muted-foreground">PA : {formatCHF(prix.secondaire)}</span>
+                        <span className="block num-tabular text-[10px] text-muted-foreground">PA : {formatEUR(prix.secondaire)}</span>
                       )}
                     </span>
                   </button>

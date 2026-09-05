@@ -5,7 +5,7 @@ import { EntiteChip, StatutDevisChip, CategorieChip } from '@/components/Chantie
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { formatCHFShort, formatDate, pct } from '@/lib/format';
+import { formatEURShort, formatDate, pct } from '@/lib/format';
 import { Plus, Search, Loader2, RotateCcw } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -102,7 +102,7 @@ function DevisList() {
                   {d.chantier && <div className="text-xs text-muted-foreground truncate">{d.chantier.nom}</div>}
                   <div className="flex items-center justify-between mt-1.5">
                     <EntiteChip entite={d.entite} />
-                    <span className="num-tabular font-semibold">{formatCHFShort(d.total_ttc)}</span>
+                    <span className="num-tabular font-semibold">{formatEURShort(d.total_ttc)}</span>
                   </div>
                   <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground">
                     <span>{formatDate(d.date_creation)}</span>
@@ -149,7 +149,7 @@ function DevisList() {
                       : <span className="text-muted-foreground">—</span>}
                   </td>
                   <td className="px-4 py-3"><CategorieChip libelle={d.client?.categorie?.libelle} /></td>
-                  <td className="px-4 py-3 text-right num-tabular">{formatCHFShort(d.total_ttc)}</td>
+                  <td className="px-4 py-3 text-right num-tabular">{formatEURShort(d.total_ttc)}</td>
                   <td className="px-4 py-3 text-right num-tabular">
                     {d.total_ht > 0 && d.taux_marge != null ? (
                       <span className={d.taux_marge < seuilAlerte ? 'text-destructive' : d.taux_marge < seuilOk ? 'text-warning-foreground' : 'text-success'}>

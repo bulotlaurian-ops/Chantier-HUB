@@ -1,23 +1,23 @@
-export function formatCHF(n: number): string {
+export function formatEUR(n: number): string {
   const v = Math.round(n * 100) / 100;
   const neg = v < 0;
   const [intPart, decPart] = Math.abs(v).toFixed(2).split('.');
-  const withApos = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, "'");
-  return `${neg ? '-' : ''}${withApos}.${decPart} CHF`;
+  const withSpaces = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return `${neg ? '-' : ''}${withSpaces},${decPart} €`;
 }
 
-export function formatCHFShort(n: number): string {
+export function formatEURShort(n: number): string {
   const v = Math.round(n);
-  return v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'") + ' CHF';
+  return v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' €';
 }
 
-// Montant suisse sans suffixe : 1'345.00 (pour les colonnes/totaux du PDF de devis).
+// Montant français sans suffixe : 1 345,00 (pour les colonnes/totaux du PDF de devis).
 export function formatMontant(n: number): string {
   const v = Math.round(n * 100) / 100;
   const neg = v < 0;
   const [intPart, decPart] = Math.abs(v).toFixed(2).split('.');
-  const withApos = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, "'");
-  return `${neg ? '-' : ''}${withApos}.${decPart}`;
+  const withSpaces = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return `${neg ? '-' : ''}${withSpaces},${decPart}`;
 }
 
 const MOIS_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
