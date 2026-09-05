@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useStore } from '@/lib/store';
+import { useEntiteFilter } from '@/lib/entite-filter';
 import { PageHeader } from '@/components/Badges';
 import { EntiteChip, StatutChantierChip } from '@/components/ChantierBadges';
 import { Button } from '@/components/ui/button';
@@ -27,8 +27,8 @@ const margeColor = (n: MargeEval['niveau']) => n === 'negatif' ? 'text-destructi
 export const Route = createFileRoute('/chantiers/')({ component: ChantiersList });
 
 function ChantiersList() {
-  const currentEntiteId = useStore(s => s.currentEntiteId);
-  const storeEntites = useStore(s => s.entites);
+  const { currentEntiteId } = useEntiteFilter();
+  const { data: storeEntites = [] } = useEntites();
   const [includeArchived, setIncludeArchived] = useState(false);
   const [sortMarge, setSortMarge] = useState<'none' | 'asc' | 'desc'>('none');
   const { data: chantiersData = [], isLoading, isError, error } = useChantiersList(includeArchived);

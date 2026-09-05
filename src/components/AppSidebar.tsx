@@ -1,7 +1,8 @@
 import { Link, useRouterState } from '@tanstack/react-router';
 import { LayoutDashboard, FileText, Hammer, Library, Settings, Clock, Users, Receipt, LogOut, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useStore } from '@/lib/store';
+import { useEntites } from '@/lib/queries/entites';
+import { useEntiteFilter } from '@/lib/entite-filter';
 import { useAuth } from '@/lib/auth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -31,11 +32,10 @@ const OUVRIER_ITEMS = [
 // `onNavigate` ferme le drawer mobile à la sélection d'un lien.
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const path = useRouterState({ select: r => r.location.pathname });
-  const role = useStore(s => s.currentRole);
-  const entiteId = useStore(s => s.currentEntiteId);
-  const setEntite = useStore(s => s.setEntite);
-  const entites = useStore(s => s.entites);
   const { profile, signOut } = useAuth();
+  const role = profile?.role ?? 'ouvrier';
+  const { currentEntiteId: entiteId, setEntite } = useEntiteFilter();
+  const { data: entites = [] } = useEntites();
 
   // Paramètres = admin-only ; le conducteur garde tout le reste du menu staff.
   const items = role === 'ouvrier'
@@ -70,7 +70,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 {entites.map(e => (
                   <SelectItem key={e.id} value={e.id}>
                     <span className="inline-flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: e.couleur }} />
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: e.couleur ?? '#999' }} />
                       {e.nom}
                     </span>
                   </SelectItem>

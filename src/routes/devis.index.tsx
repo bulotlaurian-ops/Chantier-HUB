@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useStore } from '@/lib/store';
+import { useEntites } from '@/lib/queries/entites';
+import { useEntiteFilter } from '@/lib/entite-filter';
 import { PageHeader } from '@/components/Badges';
 import { EntiteChip, StatutDevisChip, CategorieChip } from '@/components/ChantierBadges';
 import { Button } from '@/components/ui/button';
@@ -17,8 +18,8 @@ import { useParametres, paramNumber } from '@/lib/queries/parametres';
 export const Route = createFileRoute('/devis/')({ component: DevisList });
 
 function DevisList() {
-  const currentEntiteId = useStore(s => s.currentEntiteId);
-  const storeEntites = useStore(s => s.entites);
+  const { currentEntiteId } = useEntiteFilter();
+  const { data: storeEntites = [] } = useEntites();
   const [includeArchived, setIncludeArchived] = useState(false);
   const { data: devisData = [], isLoading, isError, error } = useDevisList(includeArchived);
   const { data: params } = useParametres();

@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
-import { useStore } from "./store";
 import type { Role } from "./types";
 
 export interface Profile {
@@ -86,11 +85,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const p = brut ? { id: brut.id, nom: brut.nom, prenom: brut.prenom, role: brut.role } : null;
         profilChargePour.current = p ? userId : null;
         setProfile(p);
-        if (p) {
-          const store = useStore.getState();
-          store.setRole(p.role);
-          if (p.role === "ouvrier") store.setOuvrier(p.id);
-        }
         setLoading(false);
       });
     return () => {
