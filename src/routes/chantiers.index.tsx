@@ -12,7 +12,7 @@ import { ArchivedToggle } from '@/components/ArchivedToggle';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CLE_BROUILLON_CHANTIER_GLOBAL, lireBrouillon, ecrireBrouillon, effacerBrouillon } from '@/lib/brouillon';
-import { todayIso } from '@/lib/store';
+import { todayIso } from '@/lib/devis-utils';
 import { addDays, abregeVille, formatEUR } from '@/lib/format';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useChantiersList, useCreateChantier, useArchiveChantier, useChantierCoutsReels, evalMarge, type MargeEval } from '@/lib/queries/chantiers';

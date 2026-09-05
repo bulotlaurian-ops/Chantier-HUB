@@ -14,7 +14,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } 
 import { CSS } from '@dnd-kit/utilities';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { todayIso } from '@/lib/store';
+import { todayIso } from '@/lib/devis-utils';
 import { addDays, formatEUR, pct } from '@/lib/format';
 import { useEntites } from '@/lib/queries/entites';
 import { useClients } from '@/lib/queries/clients';
