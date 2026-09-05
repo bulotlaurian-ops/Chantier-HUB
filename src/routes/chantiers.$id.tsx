@@ -23,8 +23,7 @@ import type { Tables } from '@/lib/database.types';
 import { toast } from 'sonner';
 import { ArrowLeft, FileText, Loader2, TrendingUp, Archive, RotateCcw, Receipt, CheckCircle2, Clock, Trash2, EyeOff, Eye, Plus } from 'lucide-react';
 
-// Affichage : arrondi suisse 0.05 (sur la valeur affichée uniquement, pas le calcul).
-const a05 = (n: number) => Math.round(n / 0.05) * 0.05;
+const a05 = (n: number) => Math.round(n * 100) / 100;
 
 export const Route = createFileRoute('/chantiers/$id')({ component: ChantierDetail });
 

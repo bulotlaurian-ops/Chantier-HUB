@@ -327,7 +327,7 @@ function NouveauDevis() {
   const supprimerLigne = (uid: number) => setLignes(ls => ls.filter(l => l.uid !== uid));
 
   // Totaux + marge DÉRIVÉE (§5). Les lignes titre/option ne sont pas totalisées.
-  // Arrondi suisse au 0.05 sur le TTC (§7).
+  // Total TTC arrondi au centime (aucun arrondi de caisse en France).
   const totaux = useMemo(() => {
     const fact = lignes.filter((l) => !l.est_titre && !l.est_option);
     const total_ht = r2(fact.reduce((s, l) => s + l.quantite * l.prix_unitaire_ht, 0));
@@ -336,7 +336,7 @@ function NouveauDevis() {
     const marge_estimee = r2(total_ht - cout_revient_total);
     const taux_marge = total_ht > 0 ? r2((marge_estimee / total_ht) * 100) : 0;
     const ttcBrut = total_ht + total_tva;
-    const total_ttc = r2(Math.round(ttcBrut / 0.05) * 0.05);
+    const total_ttc = r2(ttcBrut);
     const arrondi = r2(total_ttc - ttcBrut);
     return { total_ht, total_tva, total_ttc, arrondi, cout_revient_total, marge_estimee, taux_marge };
   }, [lignes]);
@@ -603,7 +603,7 @@ function NouveauDevis() {
           <Card><CardContent className="p-4 space-y-1 text-sm">
             <Row label="Total HT" value={formatEUR(totaux.total_ht)} />
             <Row label="TVA" value={formatEUR(totaux.total_tva)} />
-            {Math.abs(totaux.arrondi) > 0.0001 && <Row label="Arrondi (0.05)" value={formatEUR(totaux.arrondi)} />}
+            {Math.abs(totaux.arrondi) > 0.0001 && <Row label="Arrondi" value={formatEUR(totaux.arrondi)} />}
             <Row label="Total TTC" value={formatEUR(totaux.total_ttc)} bold />
           </CardContent></Card>
 
@@ -715,7 +715,7 @@ function NouveauDevis() {
                 <div className="rounded-md border p-3 text-sm space-y-1">
                   <Row label="Total HT" value={formatEUR(totaux.total_ht)} />
                   <Row label="TVA" value={formatEUR(totaux.total_tva)} />
-                  {Math.abs(totaux.arrondi) > 0.0001 && <Row label="Arrondi (0.05)" value={formatEUR(totaux.arrondi)} />}
+                  {Math.abs(totaux.arrondi) > 0.0001 && <Row label="Arrondi" value={formatEUR(totaux.arrondi)} />}
                   <Row label="Total TTC" value={formatEUR(totaux.total_ttc)} bold />
                 </div>
                 <div>

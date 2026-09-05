@@ -415,7 +415,7 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
   doc.setFontSize(10);
   rec('Total HT', formatMontant(d.total_ht));
   rec(`TVA ${d.taux_tva}%`, formatMontant(d.total_tva));
-  if (Math.abs(d.arrondi) > 0.0001) rec('Arrondi 0.05', formatMontant(d.arrondi));
+  if (Math.abs(d.arrondi) > 0.0001) rec('Arrondi', formatMontant(d.arrondi));
   doc.setDrawColor(...LINE); doc.setLineWidth(0.3);
   doc.line(labelX, y - 3, valX, y - 3);
   doc.setFontSize(11.5);

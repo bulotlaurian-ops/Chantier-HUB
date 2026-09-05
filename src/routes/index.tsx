@@ -14,7 +14,7 @@ import { useEntites } from '@/lib/queries/entites';
 
 export const Route = createFileRoute('/')({ component: DashboardGate });
 
-const a05 = (n: number) => Math.round(n / 0.05) * 0.05;
+const a05 = (n: number) => Math.round(n * 100) / 100;
 const margeColor = (n: MargeEval['niveau']) => n === 'negatif' ? 'text-destructive' : n === 'faible' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400';
 const margeDot = (n: MargeEval['niveau']) => n === 'negatif' ? 'bg-destructive' : n === 'faible' ? 'bg-amber-500' : 'bg-emerald-500';
 

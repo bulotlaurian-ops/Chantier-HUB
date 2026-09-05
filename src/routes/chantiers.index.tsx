@@ -21,8 +21,7 @@ import { useClients } from '@/lib/queries/clients';
 import { useEntites } from '@/lib/queries/entites';
 import { useAuth } from '@/lib/auth';
 
-// Affichage : arrondi suisse 0.05 (valeur affichée uniquement, pas le calcul).
-const a05 = (n: number) => Math.round(n / 0.05) * 0.05;
+const a05 = (n: number) => Math.round(n * 100) / 100;
 const margeColor = (n: MargeEval['niveau']) => n === 'negatif' ? 'text-destructive' : n === 'faible' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400';
 
 export const Route = createFileRoute('/chantiers/')({ component: ChantiersList });
