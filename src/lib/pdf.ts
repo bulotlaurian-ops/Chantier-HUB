@@ -18,7 +18,7 @@ const SOCIETE = {
   rue: 'Rue de l’Exemple 1',
   npaLocalite: '1000 VOTRE-VILLE',
   adresse: 'Rue de l’Exemple 1 — 1000 Votre-Ville',
-  ide: 'CHE-000.000.000',
+  siret: '000 000 000 00000',
   iban: 'CH00 0000 0000 0000 0000 0 — Votre banque',
 };
 
@@ -124,7 +124,7 @@ function drawFooter(doc: jsPDF, w: number, h: number, code: string): void {
   doc.setFontSize(8);
   doc.setTextColor(...GREY);
   const l1 = [SOCIETE.adresse, c && `T. ${c.tel}`, c?.email, c?.site].filter(Boolean).join('   ·   ');
-  const l2 = `IDE ${SOCIETE.ide}   ·   IBAN ${SOCIETE.iban}`;
+  const l2 = `SIRET ${SOCIETE.siret}   ·   IBAN ${SOCIETE.iban}`;
   doc.text(l1, w / 2, h - 11, { align: 'center' });
   doc.text(l2, w / 2, h - 7, { align: 'center' });
 }
