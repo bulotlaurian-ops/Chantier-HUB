@@ -100,7 +100,7 @@ create table profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   nom text not null, prenom text,
   role role_app not null default 'ouvrier',
-  taux_horaire numeric(10,2),                         -- défaut métier : 70 CHF (à seeder par user)
+  taux_horaire numeric(10,2),                         -- défaut métier : 70 € (à seeder par user)
   actif boolean not null default true,
   created_at timestamptz not null default now()
 );

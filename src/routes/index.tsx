@@ -92,7 +92,7 @@ function VueStaff({ isStaff }: { isStaff: boolean }) {
             <Kpi icon={<FileText className="w-4 h-4" />} label="Taux d'acceptation" value={d?.taux_acceptation == null ? '—' : `${d.taux_acceptation.toFixed(1)} %`} delta="acceptés / (acc.+ref.+exp.)" accent="blue" />
             <Kpi
               icon={<TrendingUp className="w-4 h-4" />}
-              label="Marge réelle (CHF)"
+              label="Marge réelle (€)"
               value={formatEURShort(a05(m?.marge_chf ?? 0))}
               delta={m ? `${m.pct_global == null ? '—' : m.pct_global.toFixed(1) + ' %'} · ${m.nb_non_calculables} non calculable${m.nb_non_calculables > 1 ? 's' : ''}` : undefined}
               accent="emerald"

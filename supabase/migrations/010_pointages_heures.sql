@@ -116,7 +116,7 @@ create policy clients_ouvrier_read
 -- ---------------------------------------------------------------------
 -- G. Vue chantier_couts_reels — coût MO = heures × taux.
 --    Taux = taux_horaire du profil, à défaut le paramètre taux_horaire_defaut
---    (70 CHF/h, §9). Sans ce fallback le coût ressortait à 0 (taux profil nul).
+--    (70 €/h, §9). Sans ce fallback le coût ressortait à 0 (taux profil nul).
 -- ---------------------------------------------------------------------
 create or replace view chantier_couts_reels as
 select

@@ -576,7 +576,7 @@ function VueStaff({ readOnly }: { readOnly: boolean }) {
                 </>
               )}
             </CardContent></Card>
-            <p className="text-xs text-muted-foreground mt-2">Cliquez un chantier pour le détail des heures par ouvrier. Coût MO = heures × taux horaire (70 CHF/h par défaut), cumul de tout le chantier (la colonne heures est filtrée sur la semaine).</p>
+            <p className="text-xs text-muted-foreground mt-2">Cliquez un chantier pour le détail des heures par ouvrier. Coût MO = heures × taux horaire (70 €/h par défaut), cumul de tout le chantier (la colonne heures est filtrée sur la semaine).</p>
           </TabsContent>
         )}
       </Tabs>

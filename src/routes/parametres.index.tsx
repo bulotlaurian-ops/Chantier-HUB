@@ -2,17 +2,16 @@ import { createFileRoute, Navigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-import { useStore } from '@/lib/store';
+import { useEntites } from '@/lib/queries/entites';
 import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/Badges';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ShieldCheck, User, Building2, Calculator, Percent, Clock as ClockIcon, Settings as SettingsIcon, Users as UsersIcon, RotateCcw } from 'lucide-react';
+import { ShieldCheck, User, Building2, Percent, Clock as ClockIcon, Users as UsersIcon, RotateCcw } from 'lucide-react';
 import { formatEUR } from '@/lib/format';
 import { useParametres, paramNumber, useUpdateParametre } from '@/lib/queries/parametres';
 import { useProfiles, useProfilesActifs, useUpdateTauxHoraire, useUpdateRole, useCreerUtilisateur, useReinitialiserMotDePasse, useSupprimerUtilisateur, useUpdateActif, useIdentifiants, type ProfileTaux, type ProfileRow } from '@/lib/queries/profiles';
@@ -38,109 +37,55 @@ const TVA_RATES = [
   { label: 'Exonéré', value: 0, usage: 'Export, prestations exclues' },
 ];
 
-const FG_PRESETS = [
-  { entite: 'Maill Néon Construct (MNC)', pct: 12, description: 'Loyer dépôt, véhicules, outillage' },
-  { entite: 'Maill Intérieur (MINT)', pct: 9, description: 'Showroom, logiciels, assurances' },
-  { entite: 'Maill Extérieur (MEXT)', pct: 7, description: 'Machinerie, transport, stockage' },
-];
-
-const COEF_PRESETS = [
-  { cat: 'B2B', coef: 1.20, desc: 'Tarif entreprises & promoteurs' },
-  { cat: 'Privé', coef: 1.50, desc: 'Tarif particuliers standards' },
-  { cat: 'Luxe', coef: 2.00, desc: 'Clientèle haut de gamme, finitions premium' },
-];
-
 function Parametres() {
-  const s = useStore();
+  const { data: entites = [] } = useEntites();
   return (
     <div className="space-y-6 max-w-5xl">
-      <PageHeader title="Paramètres" subtitle="Configuration des entités, tarifs, TVA et frais généraux" />
+      <PageHeader title="Paramètres" subtitle="Configuration des entités, TVA et accès" />
 
       <Tabs defaultValue="identite">
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="identite" className="gap-1.5"><Building2 className="w-3.5 h-3.5" />Identité</TabsTrigger>
-          <TabsTrigger value="tarification" className="gap-1.5"><Calculator className="w-3.5 h-3.5" />Tarification</TabsTrigger>
           <TabsTrigger value="tva" className="gap-1.5"><Percent className="w-3.5 h-3.5" />TVA</TabsTrigger>
-          <TabsTrigger value="fg" className="gap-1.5"><SettingsIcon className="w-3.5 h-3.5" />Frais généraux</TabsTrigger>
           <TabsTrigger value="ouvriers" className="gap-1.5"><UsersIcon className="w-3.5 h-3.5" />Ouvriers</TabsTrigger>
           <TabsTrigger value="heures" className="gap-1.5"><ClockIcon className="w-3.5 h-3.5" />Heures</TabsTrigger>
           <TabsTrigger value="acces" className="gap-1.5"><ShieldCheck className="w-3.5 h-3.5" />Accès</TabsTrigger>
         </TabsList>
 
         <TabsContent value="identite" className="space-y-4">
-          {s.entites.map(e => (
+          {entites.map(e => (
             <Card key={e.id}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <span className="w-3 h-3 rounded" style={{ backgroundColor: e.couleur }} />
+                  <span className="w-3 h-3 rounded" style={{ backgroundColor: e.couleur ?? '#999' }} />
                   {e.nom}
                   <Badge variant="outline" className="font-mono ml-auto">{e.code}</Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid md:grid-cols-2 gap-3">
-                <div><Label className="text-xs">Raison sociale</Label><Input defaultValue={e.nom} /></div>
-                <div><Label className="text-xs">N° IDE</Label><Input defaultValue={`CHE-${100 + Math.floor(Math.random()*900)}.${100 + Math.floor(Math.random()*900)}.${100 + Math.floor(Math.random()*900)}`} /></div>
-                <div><Label className="text-xs">Adresse</Label><Input defaultValue="Route de Berne 12, 1010 Lausanne" /></div>
-                <div><Label className="text-xs">Téléphone</Label><Input defaultValue="+41 21 555 00 00" /></div>
-                <div className="md:col-span-2"><Label className="text-xs">Email contact</Label><Input defaultValue={`contact@${e.code.toLowerCase()}.ch`} /></div>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">
+                  Raison sociale, adresse, IBAN et contacts sont définis dans <code>src/lib/pdf.ts</code> (imprimés
+                  sur les devis PDF). Leur édition depuis cet écran n'est pas encore disponible.
+                </p>
               </CardContent>
             </Card>
           ))}
         </TabsContent>
 
-        <TabsContent value="tarification" className="space-y-3">
-          <Card>
-            <CardHeader><CardTitle className="text-base">Coefficients par catégorie client</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              {COEF_PRESETS.map(c => (
-                <div key={c.cat} className="flex items-center gap-3 p-3 rounded-md border">
-                  <Badge variant="outline" className="w-16 justify-center">{c.cat}</Badge>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">×{c.coef.toFixed(2)}</div>
-                    <div className="text-xs text-muted-foreground">{c.desc}</div>
-                  </div>
-                  <Input type="number" step="0.05" defaultValue={c.coef} className="w-24 text-right" />
-                </div>
-              ))}
-              <p className="text-xs text-muted-foreground italic mt-2">Les prix de la bibliothèque sont multipliés par ces coefficients selon la catégorie du client.</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="tva" className="space-y-3">
           <Card>
-            <CardHeader><CardTitle className="text-base">Taux de TVA Suisse 2026</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">Taux de TVA France 2026</CardTitle></CardHeader>
             <CardContent className="space-y-2">
               {TVA_RATES.map(t => (
                 <div key={t.value} className="flex items-center gap-3 p-3 rounded-md border">
-                  <Badge variant="outline" className="w-20 justify-center">{t.label}</Badge>
+                  <Badge variant="outline" className="w-24 justify-center">{t.label}</Badge>
                   <div className="flex-1">
                     <div className="text-sm font-medium">{t.value.toFixed(1)} %</div>
                     <div className="text-xs text-muted-foreground">{t.usage}</div>
                   </div>
-                  <Input type="number" step="0.1" defaultValue={t.value} className="w-24 text-right" />
                 </div>
               ))}
-              <p className="text-xs text-muted-foreground italic mt-2">Taux applicables dès le 01.01.2024 — modifiables si l'administration fiscale publie de nouveaux taux.</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="fg" className="space-y-3">
-          <Card>
-            <CardHeader><CardTitle className="text-base">Frais généraux par entité</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              {FG_PRESETS.map(f => (
-                <div key={f.entite} className="flex items-center gap-3 p-3 rounded-md border">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{f.entite}</div>
-                    <div className="text-xs text-muted-foreground">{f.description}</div>
-                  </div>
-                  <Input type="number" step="0.5" defaultValue={f.pct} className="w-20 text-right" />
-                  <span className="text-xs text-muted-foreground">%</span>
-                </div>
-              ))}
-              <p className="text-xs text-muted-foreground italic mt-2">Appliqués automatiquement au prévisionnel des chantiers et à la marge.</p>
+              <p className="text-xs text-muted-foreground italic mt-2">Taux applicables dès le 01.01.2024 — modifiables si l'administration fiscale publie de nouveaux taux. Référence uniquement : la valeur réellement utilisée par les devis est celle de la table <code>tva_taux</code>.</p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -151,15 +96,11 @@ function Parametres() {
 
           <Card>
             <CardHeader><CardTitle className="text-base">Devis</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <Label>Validité par défaut (jours)</Label>
-                <Input type="number" value={s.validiteDevisJours} onChange={(e) => s.setValiditeDevis(Number(e.target.value))} className="w-32" />
-              </div>
-              <div>
-                <Label>Conditions / mentions par défaut</Label>
-                <Textarea rows={3} value={s.conditionsDevis} onChange={(e) => s.setConditionsDevis(e.target.value)} />
-              </div>
+            <CardContent>
+              <p className="text-xs text-muted-foreground italic">
+                Validité par défaut des devis et conditions par défaut : configuration à construire dans un
+                prochain chantier (non câblée à Supabase actuellement).
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -168,11 +109,10 @@ function Parametres() {
           <Card>
             <CardHeader><CardTitle className="text-base">Journée de référence</CardTitle></CardHeader>
             <CardContent>
-              <Label>Durée journée de référence (minutes)</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input type="number" value={s.dureeJourneeMin} onChange={(e) => s.setDureeJournee(Number(e.target.value))} className="w-32" />
-                <span className="text-xs text-muted-foreground">8h40 = 520 min</span>
-              </div>
+              <p className="text-xs text-muted-foreground italic">
+                Durée de journée de référence : configuration à construire dans un prochain chantier (non
+                câblée à Supabase actuellement).
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -225,7 +165,7 @@ function TauxHoraireDefautCard() {
               <Input type="number" step="0.5" min="0" value={current}
                 onChange={(e) => { setTouched(true); setVal(e.target.value); }}
                 className="w-32 text-right num-tabular" />
-              <span className="text-xs text-muted-foreground">CHF/h</span>
+              <span className="text-xs text-muted-foreground">€/h</span>
               <Button onClick={save} disabled={update.isPending}>
                 {update.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Enregistrer
               </Button>
@@ -574,7 +514,7 @@ function TauxEmployeRow({ p, defaut }: { p: ProfileTaux; defaut: number }) {
         <div className="flex items-center justify-end gap-1">
           <Input type="number" step="0.5" min="0" value={val} onChange={(e) => setVal(e.target.value)}
             placeholder={`${defaut} (taux par défaut)`} className="w-36 text-right num-tabular h-9" />
-          <span className="text-xs text-muted-foreground">CHF/h</span>
+          <span className="text-xs text-muted-foreground">€/h</span>
         </div>
       </td>
       <td className="px-3 py-2">
