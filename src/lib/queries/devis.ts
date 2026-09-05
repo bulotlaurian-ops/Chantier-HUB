@@ -28,7 +28,10 @@ export function useDevisList(includeArchived = false) {
   return useQuery({
     queryKey: [...KEY, { archived: includeArchived }],
     queryFn: async (): Promise<DevisEnrichi[]> => {
-      let q = supabase.from("devis").select(LIST_SELECT).order("date_creation", { ascending: false });
+      let q = supabase
+        .from("devis")
+        .select(LIST_SELECT)
+        .order("date_creation", { ascending: false });
       if (!includeArchived) q = q.is("archive_at", null);
       const { data, error } = await q;
       if (error) throw error;
@@ -41,7 +44,11 @@ export function useDevis(id: string) {
   return useQuery({
     queryKey: [...KEY, id],
     queryFn: async (): Promise<DevisDetail | null> => {
-      const { data, error } = await supabase.from("devis").select(DETAIL_SELECT).eq("id", id).maybeSingle();
+      const { data, error } = await supabase
+        .from("devis")
+        .select(DETAIL_SELECT)
+        .eq("id", id)
+        .maybeSingle();
       if (error) throw error;
       if (!data) return null;
       const d = data as DevisDetail;
@@ -101,7 +108,11 @@ export function useCreateDevis() {
 export function useUpdateDevisComplet() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string; devis: TablesUpdate<"devis">; lignes: NouvelleLigne[] }) => {
+    mutationFn: async (input: {
+      id: string;
+      devis: TablesUpdate<"devis">;
+      lignes: NouvelleLigne[];
+    }) => {
       const { error: e1 } = await supabase.from("devis").update(input.devis).eq("id", input.id);
       if (e1) throw e1;
       const { error: e2 } = await supabase.from("lignes_devis").delete().eq("devis_id", input.id);
@@ -156,11 +167,22 @@ async function insererCopieDevis(src: DevisDetail, numero: string): Promise<Devi
   if (error) throw error;
   if (src.lignes.length) {
     const rows = src.lignes.map((l, i) => ({
-      devis_id: d.id, ordre: i, prestation_id: l.prestation_id, poste_id: l.poste_id,
-      code: l.code, libelle: l.libelle, quantite: l.quantite, unite: l.unite,
-      prix_unitaire_ht: l.prix_unitaire_ht, remise_pct: l.remise_pct,
-      prix_revient_unitaire: l.prix_revient_unitaire, taux_tva: l.taux_tva,
-      total_ht: l.total_ht, est_option: l.est_option, est_titre: l.est_titre, temps_par_unite: l.temps_par_unite,
+      devis_id: d.id,
+      ordre: i,
+      prestation_id: l.prestation_id,
+      poste_id: l.poste_id,
+      code: l.code,
+      libelle: l.libelle,
+      quantite: l.quantite,
+      unite: l.unite,
+      prix_unitaire_ht: l.prix_unitaire_ht,
+      remise_pct: l.remise_pct,
+      prix_revient_unitaire: l.prix_revient_unitaire,
+      taux_tva: l.taux_tva,
+      total_ht: l.total_ht,
+      est_option: l.est_option,
+      est_titre: l.est_titre,
+      temps_par_unite: l.temps_par_unite,
     }));
     const { error: e2 } = await supabase.from("lignes_devis").insert(rows);
     if (e2) throw e2;
@@ -221,7 +243,13 @@ export function useVersionsDevis(numero: string | undefined) {
 export function useUpdateDevis() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Pick<DevisRow, "objet" | "conditions_paiement" | "notes">> }) => {
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Partial<Pick<DevisRow, "objet" | "conditions_paiement" | "notes">>;
+    }) => {
       const { error } = await supabase.from("devis").update(patch).eq("id", id);
       if (error) throw error;
     },
@@ -263,7 +291,10 @@ export function useArchiveDevis() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, restore = false }: { id: string; restore?: boolean }) => {
-      const { error } = await supabase.from("devis").update({ archive_at: restore ? null : new Date().toISOString() }).eq("id", id);
+      const { error } = await supabase
+        .from("devis")
+        .update({ archive_at: restore ? null : new Date().toISOString() })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_d, v) => {

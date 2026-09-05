@@ -26,8 +26,14 @@ export function usePrestationPacks() {
 export function useAddPack() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ prestation_id, prestation_liee_id, ordre }: {
-      prestation_id: string; prestation_liee_id: string; ordre: number;
+    mutationFn: async ({
+      prestation_id,
+      prestation_liee_id,
+      ordre,
+    }: {
+      prestation_id: string;
+      prestation_liee_id: string;
+      ordre: number;
     }) => {
       const { error } = await supabase
         .from("prestation_packs")

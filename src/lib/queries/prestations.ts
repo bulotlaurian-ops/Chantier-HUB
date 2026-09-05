@@ -18,15 +18,22 @@ const SELECT = "*, postes(*, sous_postes(*)), tarifs(*)";
 //   coefficient: ref × valeur          [ex 1.05]
 //   prix_absolu: valeur
 export function prixDepuisTarif(mode: ModeTarif, valeur: number, ref: number): number {
-  const v = mode === "remise_pct" ? ref * (1 + valeur) : mode === "coefficient" ? ref * valeur : valeur;
+  const v =
+    mode === "remise_pct" ? ref * (1 + valeur) : mode === "coefficient" ? ref * valeur : valeur;
   return Math.round(v * 100) / 100;
 }
 
 // Résolution du prix de vente pour une catégorie (depuis la grille tarifs, sinon référence).
 // Base = prix de vente de référence, avec repli sur le prix d'achat si PV=0 (cas SG/CDO) —
 // même logique de repli que prixAffichage(), sinon la ligne de devis serait créée à 0.
-export function prixVentePourCategorie(p: Prestation, categorieId: string | null | undefined): number {
-  const base = p.prix_vente_reference && p.prix_vente_reference > 0 ? p.prix_vente_reference : (p.prix_achat_net ?? 0);
+export function prixVentePourCategorie(
+  p: Prestation,
+  categorieId: string | null | undefined,
+): number {
+  const base =
+    p.prix_vente_reference && p.prix_vente_reference > 0
+      ? p.prix_vente_reference
+      : (p.prix_achat_net ?? 0);
   if (!categorieId) return base;
   const t = p.tarifs.find((x) => x.categorie_id === categorieId);
   return t ? prixDepuisTarif(t.mode, t.valeur, base) : base;
@@ -118,7 +125,10 @@ const trierPostes = (p: { postes?: Poste[] }) => ({
   ...p,
   postes: [...(p.postes ?? [])]
     .sort((a, b) => a.ordre - b.ordre)
-    .map((po) => ({ ...po, sous_postes: [...(po.sous_postes ?? [])].sort((a, b) => a.ordre - b.ordre) })),
+    .map((po) => ({
+      ...po,
+      sous_postes: [...(po.sous_postes ?? [])].sort((a, b) => a.ordre - b.ordre),
+    })),
 });
 
 // Options distinctes pour les dropdowns d'ajout (fournisseur / famille / code CFC).
@@ -147,7 +157,9 @@ export function usePrestationsOptions() {
       return {
         fournisseurs: [...fournisseurs].sort(triFr),
         familles: [...familles].sort(triFr),
-        cfc: [...cfc.entries()].map(([code, libelle]) => ({ code, libelle })).sort((a, b) => triFr(a.code, b.code)),
+        cfc: [...cfc.entries()]
+          .map(([code, libelle]) => ({ code, libelle }))
+          .sort((a, b) => triFr(a.code, b.code)),
       };
     },
   });
@@ -159,7 +171,11 @@ export function usePrestations() {
   return useQuery({
     queryKey: KEY,
     queryFn: async (): Promise<Prestation[]> => {
-      const { data, error } = await supabase.from("prestations").select(SELECT).eq("actif", true).order("libelle");
+      const { data, error } = await supabase
+        .from("prestations")
+        .select(SELECT)
+        .eq("actif", true)
+        .order("libelle");
       if (error) throw error;
       return (data ?? []).map(trierPostes) as Prestation[];
     },
@@ -192,7 +208,9 @@ export function useUpdatePrestation() {
 }
 
 // ---- Circuit pending → validé ----
-export type PrestationPending = Prestation & { auteur: { nom: string; prenom: string | null } | null };
+export type PrestationPending = Prestation & {
+  auteur: { nom: string; prenom: string | null } | null;
+};
 
 // Liste des propositions en attente (admin uniquement via RLS).
 export function usePrestationsPending() {
@@ -222,7 +240,9 @@ export function useProposerPrestation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: ProposerPrestationInput) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
       const { error } = await supabase.from("prestations").insert({
         libelle: input.libelle,
@@ -246,7 +266,9 @@ export function useAjouterPrestationBiblio() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: ProposerPrestationInput): Promise<void> => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
       const { error } = await supabase.from("prestations").insert({
         libelle: input.libelle,
@@ -268,7 +290,17 @@ export function useAjouterPrestationBiblio() {
 export function useValiderPrestation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch?: { libelle?: string; unite?: Tables<"prestations">["unite"]; prix_vente_reference?: number } }): Promise<Prestation> => {
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch?: {
+        libelle?: string;
+        unite?: Tables<"prestations">["unite"];
+        prix_vente_reference?: number;
+      };
+    }): Promise<Prestation> => {
       const { data, error } = await supabase
         .from("prestations")
         .update({ ...patch, statut_validation: "valide", actif: true })
@@ -287,7 +319,10 @@ export function useRejeterPrestation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("prestations").update({ statut_validation: "rejete", actif: false }).eq("id", id);
+      const { error } = await supabase
+        .from("prestations")
+        .update({ statut_validation: "rejete", actif: false })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
@@ -310,11 +345,21 @@ export interface NouveauTarif {
 export function useCreatePrestation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { prestation: TablesInsert<"prestations">; postes: NouveauPoste[]; tarifs?: NouveauTarif[] }) => {
+    mutationFn: async (input: {
+      prestation: TablesInsert<"prestations">;
+      postes: NouveauPoste[];
+      tarifs?: NouveauTarif[];
+    }) => {
       // created_by = auteur courant : requis par la RLS d'insertion conducteur.
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
-      const { data: p, error } = await supabase.from("prestations").insert({ ...input.prestation, created_by: user.id }).select().single();
+      const { data: p, error } = await supabase
+        .from("prestations")
+        .insert({ ...input.prestation, created_by: user.id })
+        .select()
+        .single();
       if (error) throw error;
       if (input.postes.length) {
         const rows = input.postes.map((po, i) => ({ ...po, prestation_id: p.id, ordre: i }));
@@ -351,7 +396,9 @@ export function useDuplicatePrestation() {
       void id;
       void created_at;
       // created_by = auteur courant (et non celui de la source) : requis par la RLS conducteur.
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
       const { data: p, error } = await supabase
         .from("prestations")
@@ -360,20 +407,40 @@ export function useDuplicatePrestation() {
         .single();
       if (error) throw error;
       if (tarifs.length) {
-        const { error: et } = await supabase
-          .from("tarifs")
-          .insert(tarifs.map((t) => ({ prestation_id: p.id, categorie_id: t.categorie_id, mode: t.mode, valeur: t.valeur })));
+        const { error: et } = await supabase.from("tarifs").insert(
+          tarifs.map((t) => ({
+            prestation_id: p.id,
+            categorie_id: t.categorie_id,
+            mode: t.mode,
+            valeur: t.valeur,
+          })),
+        );
         if (et) throw et;
       }
       for (const po of postes) {
         const { data: newPoste, error: e2 } = await supabase
           .from("postes")
-          .insert({ prestation_id: p.id, libelle: po.libelle, unite: po.unite, prix_brut: po.prix_brut, temps_par_unite: po.temps_par_unite, inclus_defaut: po.inclus_defaut, ordre: po.ordre })
+          .insert({
+            prestation_id: p.id,
+            libelle: po.libelle,
+            unite: po.unite,
+            prix_brut: po.prix_brut,
+            temps_par_unite: po.temps_par_unite,
+            inclus_defaut: po.inclus_defaut,
+            ordre: po.ordre,
+          })
           .select()
           .single();
         if (e2) throw e2;
         if (po.sous_postes.length) {
-          const sp = po.sous_postes.map((s) => ({ poste_id: newPoste.id, libelle: s.libelle, unite: s.unite, prix_brut: s.prix_brut, temps_par_unite: s.temps_par_unite, ordre: s.ordre }));
+          const sp = po.sous_postes.map((s) => ({
+            poste_id: newPoste.id,
+            libelle: s.libelle,
+            unite: s.unite,
+            prix_brut: s.prix_brut,
+            temps_par_unite: s.temps_par_unite,
+            ordre: s.ordre,
+          }));
           const { error: e3 } = await supabase.from("sous_postes").insert(sp);
           if (e3) throw e3;
         }

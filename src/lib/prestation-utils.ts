@@ -1,4 +1,4 @@
-import type { Prestation } from '@/lib/types';
+import type { Prestation } from "@/lib/types";
 
 // Totaux d'une prestation (modèle front / store Zustand — encore utilisé par devis.nouveau
 // tant que la vue Devis n'est pas migrée sur Supabase).

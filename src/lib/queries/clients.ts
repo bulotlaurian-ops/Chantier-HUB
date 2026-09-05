@@ -30,7 +30,10 @@ export function useArchiveClient() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, restore = false }: { id: string; restore?: boolean }) => {
-      const { error } = await supabase.from("clients").update({ archive_at: restore ? null : new Date().toISOString() }).eq("id", id);
+      const { error } = await supabase
+        .from("clients")
+        .update({ archive_at: restore ? null : new Date().toISOString() })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_d, v) => {
@@ -44,7 +47,11 @@ export function useClient(id: string) {
   return useQuery({
     queryKey: [...CLIENTS_KEY, id],
     queryFn: async (): Promise<Client | null> => {
-      const { data, error } = await supabase.from("clients").select(SELECT).eq("id", id).maybeSingle();
+      const { data, error } = await supabase
+        .from("clients")
+        .select(SELECT)
+        .eq("id", id)
+        .maybeSingle();
       if (error) throw error;
       return (data as Client) ?? null;
     },
@@ -67,8 +74,19 @@ export function useCreateClient() {
 export function useUpdateClient() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: TablesUpdate<"clients"> }): Promise<ClientRow> => {
-      const { data, error } = await supabase.from("clients").update(patch).eq("id", id).select().single();
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: TablesUpdate<"clients">;
+    }): Promise<ClientRow> => {
+      const { data, error } = await supabase
+        .from("clients")
+        .update(patch)
+        .eq("id", id)
+        .select()
+        .single();
       if (error) throw error;
       return data;
     },

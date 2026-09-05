@@ -26,7 +26,12 @@ export interface DashboardKpis {
 
 // Agrégats du dashboard via RPC (SECURITY INVOKER → RLS du caller). enabled=false
 // pour ne pas la monter côté ouvrier (elle renverrait NULL de toute façon).
-export function useDashboardKpis(from: string, to: string, entiteId: string | null, enabled = true) {
+export function useDashboardKpis(
+  from: string,
+  to: string,
+  entiteId: string | null,
+  enabled = true,
+) {
   return useQuery({
     queryKey: ["dashboard_kpis", from, to, entiteId],
     enabled,
@@ -44,7 +49,8 @@ export function useDashboardKpis(from: string, to: string, entiteId: string | nu
 
 export type Periode = "semaine" | "mois" | "trimestre";
 
-const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const iso = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 // Bornes [from, to] INCLUSIVES d'une période, ancrées sur `ref` (def. aujourd'hui).
 export function periodeBornes(kind: Periode, ref = new Date()): { from: string; to: string } {

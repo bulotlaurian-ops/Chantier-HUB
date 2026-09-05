@@ -36,9 +36,9 @@ Les données personnelles communiquées par le Client sont traitées aux seules 
 Les documents contractuels s'appliquent dans l'ordre suivant : le devis accepté, les présentes CGV, les normes techniques applicables, puis le droit national applicable. Le for juridique est le siège de ${entite}.`;
 }
 
-export const CGV_PRO = cgvGenerique('ARTISAN PRO');
-export const CGV_EXT = cgvGenerique('EXTERIEUR');
-export const CGV_INT = cgvGenerique('INTERIEUR');
+export const CGV_PRO = cgvGenerique("ARTISAN PRO");
+export const CGV_EXT = cgvGenerique("EXTERIEUR");
+export const CGV_INT = cgvGenerique("INTERIEUR");
 
 export const CGV_PAR_CODE: Record<string, string> = {
   PRO: CGV_PRO,

@@ -1,28 +1,28 @@
-import { useState } from 'react';
-import { useRouterState } from '@tanstack/react-router';
-import { Menu } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { SidebarContent } from '@/components/AppSidebar';
+import { useState } from "react";
+import { useRouterState } from "@tanstack/react-router";
+import { Menu } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { SidebarContent } from "@/components/AppSidebar";
 
 const TITRES: { prefix: string; label: string }[] = [
-  { prefix: '/devis', label: 'Devis' },
-  { prefix: '/chantiers', label: 'Chantiers' },
-  { prefix: '/clients', label: 'Clients' },
-  { prefix: '/heures', label: 'Heures' },
-  { prefix: '/factures-fournisseurs', label: 'Factures' },
-  { prefix: '/bibliotheque', label: 'Bibliothèque' },
-  { prefix: '/parametres', label: 'Paramètres' },
+  { prefix: "/devis", label: "Devis" },
+  { prefix: "/chantiers", label: "Chantiers" },
+  { prefix: "/clients", label: "Clients" },
+  { prefix: "/heures", label: "Heures" },
+  { prefix: "/factures-fournisseurs", label: "Factures" },
+  { prefix: "/bibliotheque", label: "Bibliothèque" },
+  { prefix: "/parametres", label: "Paramètres" },
 ];
 
 function titrePage(path: string): string {
-  const m = TITRES.find((t) => path === t.prefix || path.startsWith(t.prefix + '/'));
-  return m ? m.label : 'Accueil';
+  const m = TITRES.find((t) => path === t.prefix || path.startsWith(t.prefix + "/"));
+  return m ? m.label : "Accueil";
 }
 
 // Barre supérieure mobile (masquée ≥ md). Logo · titre de page · thème + hamburger → Sheet.
 export function MobileTopBar() {
-  const path = useRouterState({ select: r => r.location.pathname });
+  const path = useRouterState({ select: (r) => r.location.pathname });
   const [open, setOpen] = useState(false);
 
   return (
@@ -35,7 +35,10 @@ export function MobileTopBar() {
         <ThemeToggle variant="sidebar" />
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <button aria-label="Ouvrir le menu" className="inline-flex h-9 w-9 items-center justify-center rounded-md text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground">
+            <button
+              aria-label="Ouvrir le menu"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+            >
               <Menu className="h-5 w-5" />
             </button>
           </SheetTrigger>

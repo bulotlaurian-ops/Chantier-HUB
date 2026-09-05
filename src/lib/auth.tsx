@@ -82,7 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setLoading(false);
           return;
         }
-        const p = brut ? { id: brut.id, nom: brut.nom, prenom: brut.prenom, role: brut.role } : null;
+        const p = brut
+          ? { id: brut.id, nom: brut.nom, prenom: brut.prenom, role: brut.role }
+          : null;
         profilChargePour.current = p ? userId : null;
         setProfile(p);
         setLoading(false);

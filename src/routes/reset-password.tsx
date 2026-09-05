@@ -71,8 +71,12 @@ function ResetPassword() {
           <div className="mb-6 text-xl font-light tracking-tight text-foreground">
             Artisan Pro <span className="text-muted-foreground">Group</span>
           </div>
-          <h1 className="text-2xl font-light tracking-tight text-foreground">Nouveau mot de passe</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Choisissez un nouveau mot de passe pour votre compte.</p>
+          <h1 className="text-2xl font-light tracking-tight text-foreground">
+            Nouveau mot de passe
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Choisissez un nouveau mot de passe pour votre compte.
+          </p>
         </div>
 
         {!checked ? (
@@ -82,9 +86,13 @@ function ResetPassword() {
         ) : !ready ? (
           <div className="space-y-4">
             <p className="text-sm text-destructive" role="alert">
-              Lien invalide ou expiré. Demandez un nouveau lien de réinitialisation depuis la page de connexion.
+              Lien invalide ou expiré. Demandez un nouveau lien de réinitialisation depuis la page
+              de connexion.
             </p>
-            <a href="/" className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
+            <a
+              href="/"
+              className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            >
               Retour à la connexion
             </a>
           </div>
@@ -118,7 +126,9 @@ function ResetPassword() {
             </div>
 
             {error && (
-              <p className="text-sm text-destructive" role="alert">{error}</p>
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
             )}
 
             <Button type="submit" className="h-11 w-full" disabled={submitting}>

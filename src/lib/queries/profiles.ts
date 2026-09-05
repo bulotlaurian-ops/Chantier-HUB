@@ -57,7 +57,9 @@ export function useUpdateRole() {
 const FN_ADMIN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-utilisateurs`;
 
 async function appelerAdminUtilisateurs(payload: Record<string, unknown>) {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session) throw new Error("Session expirée — reconnecte-toi.");
   const resp = await fetch(FN_ADMIN, {
     method: "POST",
@@ -85,10 +87,13 @@ async function appelerAdminUtilisateurs(payload: Record<string, unknown>) {
           `Désactive le compte plutôt que de le supprimer.`,
       );
     }
-    if (code === "suppression_de_soi") throw new Error("Vous ne pouvez pas supprimer votre propre compte.");
+    if (code === "suppression_de_soi")
+      throw new Error("Vous ne pouvez pas supprimer votre propre compte.");
     throw new Error(
       messages[code] ??
-        (/already|exists|registered/i.test(code) ? "Cet identifiant est déjà utilisé." : code || "Échec de l'opération"),
+        (/already|exists|registered/i.test(code)
+          ? "Cet identifiant est déjà utilisé."
+          : code || "Échec de l'opération"),
     );
   }
   return res;

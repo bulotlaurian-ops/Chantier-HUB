@@ -10,7 +10,10 @@ export function useCategoriesTarifaires() {
   return useQuery({
     queryKey: ["categories_tarifaires"],
     queryFn: async (): Promise<CategorieTarifaire[]> => {
-      const { data, error } = await supabase.from("categories_tarifaires").select("*").order("ordre");
+      const { data, error } = await supabase
+        .from("categories_tarifaires")
+        .select("*")
+        .order("ordre");
       if (error) throw error;
       return data ?? [];
     },

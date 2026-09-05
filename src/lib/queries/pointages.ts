@@ -7,7 +7,13 @@ export type PointageRow = Tables<"pointages">;
 // Pointage enrichi du chantier (référence/nom/ville/entité) et de l'ouvrier
 // (nom + taux horaire pour le détail du coût main-d'œuvre sur la fiche chantier).
 export type PointageEnrichi = PointageRow & {
-  chantier: { id: string; reference: string; nom: string; ville: string | null; entite_id: string } | null;
+  chantier: {
+    id: string;
+    reference: string;
+    nom: string;
+    ville: string | null;
+    entite_id: string;
+  } | null;
   ouvrier: { id: string; nom: string; prenom: string | null; taux_horaire: number | null } | null;
 };
 

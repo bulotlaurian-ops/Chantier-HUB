@@ -7,8 +7,15 @@ import type { ModeTarif } from "@/lib/queries/prestations";
 export function useUpsertTarif() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (t: { prestation_id: string; categorie_id: string; mode: ModeTarif; valeur: number }) => {
-      const { error } = await supabase.from("tarifs").upsert(t, { onConflict: "prestation_id,categorie_id" });
+    mutationFn: async (t: {
+      prestation_id: string;
+      categorie_id: string;
+      mode: ModeTarif;
+      valeur: number;
+    }) => {
+      const { error } = await supabase
+        .from("tarifs")
+        .upsert(t, { onConflict: "prestation_id,categorie_id" });
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["prestations"] }),
@@ -18,8 +25,18 @@ export function useUpsertTarif() {
 export function useDeleteTarif() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ prestation_id, categorie_id }: { prestation_id: string; categorie_id: string }) => {
-      const { error } = await supabase.from("tarifs").delete().eq("prestation_id", prestation_id).eq("categorie_id", categorie_id);
+    mutationFn: async ({
+      prestation_id,
+      categorie_id,
+    }: {
+      prestation_id: string;
+      categorie_id: string;
+    }) => {
+      const { error } = await supabase
+        .from("tarifs")
+        .delete()
+        .eq("prestation_id", prestation_id)
+        .eq("categorie_id", categorie_id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["prestations"] }),

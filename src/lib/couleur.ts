@@ -13,12 +13,12 @@ function parseHex(hex: string): [number, number, number] | null {
 
 const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
 const toHex = (r: number, g: number, b: number) =>
-  '#' + [r, g, b].map((v) => clamp(v).toString(16).padStart(2, '0')).join('');
+  "#" + [r, g, b].map((v) => clamp(v).toString(16).padStart(2, "0")).join("");
 const luminance = (r: number, g: number, b: number) => (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
 export function couleurLisible(hex: string | null | undefined, dark: boolean): string {
   const rgb = hex ? parseHex(hex) : null;
-  if (!rgb) return dark ? '#94a3b8' : '#64748b'; // repli slate
+  if (!rgb) return dark ? "#94a3b8" : "#64748b"; // repli slate
   const [r, g, b] = rgb;
   const L = luminance(r, g, b);
   if (dark && L < 0.5) {

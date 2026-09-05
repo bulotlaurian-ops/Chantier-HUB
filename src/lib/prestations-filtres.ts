@@ -78,15 +78,13 @@ export function grouperParFamille(list: Prestation[]): [string, Prestation[]][] 
   );
 }
 
-const mkToggle =
-  (setter: Dispatch<SetStateAction<Set<string>>>) =>
-  (val: string) =>
-    setter((prev) => {
-      const n = new Set(prev);
-      if (n.has(val)) n.delete(val);
-      else n.add(val);
-      return n;
-    });
+const mkToggle = (setter: Dispatch<SetStateAction<Set<string>>>) => (val: string) =>
+  setter((prev) => {
+    const n = new Set(prev);
+    if (n.has(val)) n.delete(val);
+    else n.add(val);
+    return n;
+  });
 
 // Hook d'état des filtres, partagé par les 2 écrans.
 //   entitePreselection : pré-coche une entité (entité du devis courant) — débrayable.

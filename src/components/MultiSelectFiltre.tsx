@@ -1,13 +1,23 @@
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
-  DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { ChevronDown } from 'lucide-react';
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { ChevronDown } from "lucide-react";
 
 // Dropdown multi-sélection (cases à cocher) réutilisable.
 // Set vide ⇒ « Toutes » (aucune contrainte). Le menu reste ouvert entre les coches.
-export function MultiSelectFiltre({ label, options, selected, onToggle, width = 'w-44' }: {
+export function MultiSelectFiltre({
+  label,
+  options,
+  selected,
+  onToggle,
+  width = "w-44",
+}: {
   label: string;
   options: string[];
   selected: Set<string>;
@@ -15,16 +25,19 @@ export function MultiSelectFiltre({ label, options, selected, onToggle, width = 
   width?: string;
 }) {
   const resume =
-    selected.size === 0 ? 'Toutes'
-    : selected.size === 1 ? [...selected][0]
-    : `${selected.size} sélectionnées`;
+    selected.size === 0
+      ? "Toutes"
+      : selected.size === 1
+        ? [...selected][0]
+        : `${selected.size} sélectionnées`;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className={`${width} justify-between font-normal h-9`}>
           <span className="truncate text-sm">
-            <span className="text-muted-foreground">{label} : </span>{resume}
+            <span className="text-muted-foreground">{label} : </span>
+            {resume}
           </span>
           <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
         </Button>

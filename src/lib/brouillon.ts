@@ -4,7 +4,7 @@
 // sous une clé dédiée, la restaure à la réouverture et l'efface à l'enregistrement.
 // localStorage est par navigateur : aucun risque de fuite entre utilisateurs.
 
-const PREFIXE = 'chantier.brouillon.';
+const PREFIXE = "chantier.brouillon.";
 
 export const CLE_BROUILLON_DEVIS = `${PREFIXE}devis`;
 export const CLE_BROUILLON_CLIENT = `${PREFIXE}client`;

@@ -28,7 +28,11 @@ export function useUpdateParametre() {
 }
 
 // Helper typé pour lire un paramètre numérique avec valeur de repli explicite.
-export function paramNumber(params: Record<string, string> | undefined, cle: string, fallback: number): number {
+export function paramNumber(
+  params: Record<string, string> | undefined,
+  cle: string,
+  fallback: number,
+): number {
   const v = params?.[cle];
   const n = v == null ? NaN : Number(v);
   return Number.isFinite(n) ? n : fallback;

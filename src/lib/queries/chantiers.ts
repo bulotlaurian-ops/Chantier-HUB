@@ -31,7 +31,10 @@ export function useArchiveChantier() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, restore = false }: { id: string; restore?: boolean }) => {
-      const { error } = await supabase.from("chantiers").update({ archive_at: restore ? null : new Date().toISOString() }).eq("id", id);
+      const { error } = await supabase
+        .from("chantiers")
+        .update({ archive_at: restore ? null : new Date().toISOString() })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_d, v) => {
@@ -58,7 +61,11 @@ export function useChantier(id: string) {
   return useQuery({
     queryKey: [...KEY, id],
     queryFn: async (): Promise<ChantierEnrichi | null> => {
-      const { data, error } = await supabase.from("chantiers").select(SELECT).eq("id", id).maybeSingle();
+      const { data, error } = await supabase
+        .from("chantiers")
+        .select(SELECT)
+        .eq("id", id)
+        .maybeSingle();
       if (error) throw error;
       return (data as ChantierEnrichi) ?? null;
     },
@@ -127,7 +134,7 @@ export const SEUIL_MARGE_FAIBLE_PCT = 10;
 
 export type NiveauMarge = "ok" | "faible" | "negatif";
 export interface MargeEval {
-  calculable: boolean;            // false = aucun devis accepté (afficher « — »)
+  calculable: boolean; // false = aucun devis accepté (afficher « — »)
   coutReel: number;
   margeChf: number | null;
   margePct: number | null;
@@ -140,10 +147,12 @@ export function evalMarge(c: ChantierCouts | undefined): MargeEval {
   const fo = Number(c?.cout_fournisseurs_reel ?? 0);
   const coutReel = mo + fo;
   const ref = c?.montant_reference;
-  if (ref == null) return { calculable: false, coutReel, margeChf: null, margePct: null, niveau: null };
+  if (ref == null)
+    return { calculable: false, coutReel, margeChf: null, margePct: null, niveau: null };
   const margeChf = Number(c?.marge_reelle_chf ?? 0);
   const margePct = c?.marge_reelle_pct == null ? null : Number(c.marge_reelle_pct);
-  const niveau: NiveauMarge = margeChf < 0 ? "negatif" : (margePct ?? 0) < SEUIL_MARGE_FAIBLE_PCT ? "faible" : "ok";
+  const niveau: NiveauMarge =
+    margeChf < 0 ? "negatif" : (margePct ?? 0) < SEUIL_MARGE_FAIBLE_PCT ? "faible" : "ok";
   return { calculable: true, coutReel, margeChf, margePct, niveau };
 }
 

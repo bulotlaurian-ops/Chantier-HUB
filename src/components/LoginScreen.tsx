@@ -86,7 +86,9 @@ export function LoginScreen() {
             <>
               <div className="mb-8">
                 <h1 className="text-2xl font-light tracking-tight text-foreground">Connexion</h1>
-                <p className="mt-2 text-sm text-muted-foreground">Accédez à votre espace de gestion.</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Accédez à votre espace de gestion.
+                </p>
               </div>
 
               <form onSubmit={onSubmit} className="space-y-5">
@@ -127,7 +129,9 @@ export function LoginScreen() {
                 </div>
 
                 {error && (
-                  <p className="text-sm text-destructive" role="alert">{error}</p>
+                  <p className="text-sm text-destructive" role="alert">
+                    {error}
+                  </p>
                 )}
 
                 <Button type="submit" className="h-11 w-full" disabled={submitting}>
@@ -145,7 +149,9 @@ export function LoginScreen() {
           {mode === "forgot" && (
             <>
               <div className="mb-8">
-                <h1 className="text-2xl font-light tracking-tight text-foreground">Mot de passe oublié</h1>
+                <h1 className="text-2xl font-light tracking-tight text-foreground">
+                  Mot de passe oublié
+                </h1>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Saisissez votre e-mail : nous vous enverrons un lien de réinitialisation.
                 </p>
@@ -185,10 +191,13 @@ export function LoginScreen() {
           {mode === "sent" && (
             <>
               <div className="mb-8">
-                <h1 className="text-2xl font-light tracking-tight text-foreground">E-mail envoyé</h1>
+                <h1 className="text-2xl font-light tracking-tight text-foreground">
+                  E-mail envoyé
+                </h1>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Un lien de réinitialisation a été envoyé à <span className="font-medium text-foreground">{resetEmail}</span>.
-                  Vérifiez votre boîte mail.
+                  Un lien de réinitialisation a été envoyé à{" "}
+                  <span className="font-medium text-foreground">{resetEmail}</span>. Vérifiez votre
+                  boîte mail.
                 </p>
               </div>
 

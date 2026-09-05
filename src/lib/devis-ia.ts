@@ -40,7 +40,12 @@ export type OperationPatch =
   | { op: "ajouter_ligne"; position?: "fin" | "debut" | number; ligne: LigneProposee }
   | { op: "modifier_ligne"; ligne_id: string; champs: ChampsModifiables }
   | { op: "supprimer_ligne"; ligne_id: string }
-  | { op: "ambigu"; message: string; candidats_ligne_ids: string[]; operation_en_attente: OperationPatch };
+  | {
+      op: "ambigu";
+      message: string;
+      candidats_ligne_ids: string[];
+      operation_en_attente: OperationPatch;
+    };
 
 export interface ChampsModifiables {
   quantite?: number;
@@ -103,21 +108,36 @@ export interface Recorder {
 }
 
 export async function startRecording(): Promise<Recorder> {
-  if (!navigator.mediaDevices?.getUserMedia) throw new DevisIAError("micro_indisponible", "Micro non disponible");
+  if (!navigator.mediaDevices?.getUserMedia)
+    throw new DevisIAError("micro_indisponible", "Micro non disponible");
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm";
+  const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+    ? "audio/webm;codecs=opus"
+    : "audio/webm";
   const rec = new MediaRecorder(stream, { mimeType: mime, audioBitsPerSecond: 128_000 });
   const chunks: Blob[] = [];
-  rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+  rec.ondataavailable = (e) => {
+    if (e.data.size) chunks.push(e.data);
+  };
   rec.start();
   const cleanup = () => stream.getTracks().forEach((t) => t.stop());
   return {
     stop: () =>
       new Promise<Blob>((resolve) => {
-        rec.onstop = () => { cleanup(); resolve(new Blob(chunks, { type: "audio/webm" })); };
+        rec.onstop = () => {
+          cleanup();
+          resolve(new Blob(chunks, { type: "audio/webm" }));
+        };
         rec.stop();
       }),
-    cancel: () => { try { rec.stop(); } catch { /* déjà arrêté */ } cleanup(); },
+    cancel: () => {
+      try {
+        rec.stop();
+      } catch {
+        /* déjà arrêté */
+      }
+      cleanup();
+    },
   };
 }
 
@@ -129,12 +149,15 @@ async function blobToBase64(blob: Blob): Promise<string> {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   let bin = "";
   const CH = 0x8000;
-  for (let i = 0; i < bytes.length; i += CH) bin += String.fromCharCode(...bytes.subarray(i, i + CH));
+  for (let i = 0; i < bytes.length; i += CH)
+    bin += String.fromCharCode(...bytes.subarray(i, i + CH));
   return btoa(bin);
 }
 
 export async function callDevisIA(p: CallDevisIAParams): Promise<DevisIAResultat> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session) throw new DevisIAError("non_authentifie", "Session expirée — reconnecte-toi.");
 
   let audio_base64: string | null = null;
@@ -167,7 +190,11 @@ export async function callDevisIA(p: CallDevisIAParams): Promise<DevisIAResultat
   }
 
   let body: unknown = null;
-  try { body = await resp.json(); } catch { /* corps non-JSON */ }
+  try {
+    body = await resp.json();
+  } catch {
+    /* corps non-JSON */
+  }
 
   if (!resp.ok) {
     throw new DevisIAError((body as DevisIAErreurBody)?.erreur ?? `http_${resp.status}`);
@@ -201,7 +228,9 @@ export async function callOcrDevisST(p: {
   mimeType: string;
   contexte: DevisIAContexte;
 }): Promise<DevisSTResultat> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session) throw new DevisIAError("non_authentifie", "Session expirée — reconnecte-toi.");
 
   let resp: Response;
@@ -213,20 +242,33 @@ export async function callOcrDevisST(p: {
         Authorization: `Bearer ${session.access_token}`,
         apikey: ANON,
       },
-      body: JSON.stringify({ fichier_base64: p.fichierBase64, mime_type: p.mimeType, contexte: p.contexte }),
+      body: JSON.stringify({
+        fichier_base64: p.fichierBase64,
+        mime_type: p.mimeType,
+        contexte: p.contexte,
+      }),
     });
   } catch {
     throw new DevisIAError("reseau", "Connexion impossible — réessaie ou saisis manuellement.");
   }
 
   let body: unknown = null;
-  try { body = await resp.json(); } catch { /* corps non-JSON */ }
+  try {
+    body = await resp.json();
+  } catch {
+    /* corps non-JSON */
+  }
 
-  if (!resp.ok) throw new DevisIAError((body as DevisIAErreurBody)?.erreur ?? `http_${resp.status}`);
+  if (!resp.ok)
+    throw new DevisIAError((body as DevisIAErreurBody)?.erreur ?? `http_${resp.status}`);
   if (!body || (body as { ok?: boolean }).ok === false) {
     throw new DevisIAError((body as DevisIAErreurBody)?.erreur ?? "reponse_invalide");
   }
-  const b = body as { fournisseur?: string | null; lignes?: LigneDevisST[]; avertissements?: string[] };
+  const b = body as {
+    fournisseur?: string | null;
+    lignes?: LigneDevisST[];
+    avertissements?: string[];
+  };
   return {
     fournisseur: b.fournisseur ?? null,
     lignes: Array.isArray(b.lignes) ? b.lignes : [],
@@ -237,14 +279,23 @@ export async function callOcrDevisST(p: {
 // Messages utilisateur par code d'erreur (fallback : saisie manuelle).
 export function messageErreurIA(code: string): string {
   switch (code) {
-    case "transcription_echouee": return "Transcription impossible. Reformule ou saisis le texte.";
-    case "llm_indisponible": return "L'assistant IA est momentanément indisponible.";
-    case "payload_invalide": return "Requête invalide.";
-    case "aucune_operation": return "Aucune modification détectée dans la consigne.";
-    case "role_non_autorise": return "Action réservée aux administrateurs et conducteurs.";
-    case "non_authentifie": return "Session expirée — reconnecte-toi.";
-    case "timeout": return "L'analyse a pris trop de temps. Réessaie.";
-    case "reseau": return "Connexion impossible.";
-    default: return "Échec de l'assistance IA. Tu peux saisir manuellement.";
+    case "transcription_echouee":
+      return "Transcription impossible. Reformule ou saisis le texte.";
+    case "llm_indisponible":
+      return "L'assistant IA est momentanément indisponible.";
+    case "payload_invalide":
+      return "Requête invalide.";
+    case "aucune_operation":
+      return "Aucune modification détectée dans la consigne.";
+    case "role_non_autorise":
+      return "Action réservée aux administrateurs et conducteurs.";
+    case "non_authentifie":
+      return "Session expirée — reconnecte-toi.";
+    case "timeout":
+      return "L'analyse a pris trop de temps. Réessaie.";
+    case "reseau":
+      return "Connexion impossible.";
+    default:
+      return "Échec de l'assistance IA. Tu peux saisir manuellement.";
   }
 }

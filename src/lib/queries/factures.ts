@@ -97,7 +97,15 @@ export function useFacturesAffectables() {
 export function useCreateRepartition() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ facture_id, chantier_id, montant_ht_affecte }: { facture_id: string; chantier_id: string; montant_ht_affecte: number }) => {
+    mutationFn: async ({
+      facture_id,
+      chantier_id,
+      montant_ht_affecte,
+    }: {
+      facture_id: string;
+      chantier_id: string;
+      montant_ht_affecte: number;
+    }) => {
       const { error } = await supabase
         .from("factures_repartition")
         .insert({ facture_id, chantier_id, montant_ht_affecte });
@@ -116,7 +124,10 @@ export function useToggleRepartitionComptabilisee() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, comptabilise }: { id: string; comptabilise: boolean }) => {
-      const { error } = await supabase.from("factures_repartition").update({ comptabilise }).eq("id", id);
+      const { error } = await supabase
+        .from("factures_repartition")
+        .update({ comptabilise })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -141,7 +152,10 @@ export function useDeleteRepartition() {
   });
 }
 
-export interface RepartitionInput { chantier_id: string; montant_ht_affecte: number }
+export interface RepartitionInput {
+  chantier_id: string;
+  montant_ht_affecte: number;
+}
 export interface FactureInput {
   fournisseur: string;
   numero_facture?: string | null;
@@ -159,7 +173,13 @@ const invalidate = (qc: ReturnType<typeof useQueryClient>) => {
 export function useCreateFacture() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ facture, repartitions }: { facture: FactureInput; repartitions: RepartitionInput[] }): Promise<FactureRow> => {
+    mutationFn: async ({
+      facture,
+      repartitions,
+    }: {
+      facture: FactureInput;
+      repartitions: RepartitionInput[];
+    }): Promise<FactureRow> => {
       const { data, error } = await supabase
         .from("factures_fournisseurs")
         .insert({
@@ -174,7 +194,11 @@ export function useCreateFacture() {
       if (error) throw error;
       if (repartitions.length) {
         const { error: e2 } = await supabase.from("factures_repartition").insert(
-          repartitions.map((r) => ({ facture_id: data.id, chantier_id: r.chantier_id, montant_ht_affecte: r.montant_ht_affecte })),
+          repartitions.map((r) => ({
+            facture_id: data.id,
+            chantier_id: r.chantier_id,
+            montant_ht_affecte: r.montant_ht_affecte,
+          })),
         );
         if (e2) throw e2;
       }
@@ -188,7 +212,15 @@ export function useCreateFacture() {
 export function useUpdateFacture() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, facture, repartitions }: { id: string; facture: FactureInput; repartitions: RepartitionInput[] }) => {
+    mutationFn: async ({
+      id,
+      facture,
+      repartitions,
+    }: {
+      id: string;
+      facture: FactureInput;
+      repartitions: RepartitionInput[];
+    }) => {
       const { error: e1 } = await supabase
         .from("factures_fournisseurs")
         .update({
@@ -200,11 +232,18 @@ export function useUpdateFacture() {
         })
         .eq("id", id);
       if (e1) throw e1;
-      const { error: e2 } = await supabase.from("factures_repartition").delete().eq("facture_id", id);
+      const { error: e2 } = await supabase
+        .from("factures_repartition")
+        .delete()
+        .eq("facture_id", id);
       if (e2) throw e2;
       if (repartitions.length) {
         const { error: e3 } = await supabase.from("factures_repartition").insert(
-          repartitions.map((r) => ({ facture_id: id, chantier_id: r.chantier_id, montant_ht_affecte: r.montant_ht_affecte })),
+          repartitions.map((r) => ({
+            facture_id: id,
+            chantier_id: r.chantier_id,
+            montant_ht_affecte: r.montant_ht_affecte,
+          })),
         );
         if (e3) throw e3;
       }
@@ -218,7 +257,10 @@ export function useValiderFacture() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("factures_fournisseurs").update({ statut: "valide" }).eq("id", id);
+      const { error } = await supabase
+        .from("factures_fournisseurs")
+        .update({ statut: "valide" })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => invalidate(qc),
@@ -241,10 +283,20 @@ export function useDeleteFacture() {
 // l'upload ou l'URL de download n8n. On garde le nom d'origine pour l'affichage.
 function slugFilename(name: string): string {
   const dot = name.lastIndexOf(".");
-  const base = (dot > 0 ? name.slice(0, dot) : name)
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "fichier";
-  const ext = dot > 0 ? name.slice(dot + 1).replace(/[^a-zA-Z0-9]/g, "").toLowerCase() : "";
+  const base =
+    (dot > 0 ? name.slice(0, dot) : name)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "fichier";
+  const ext =
+    dot > 0
+      ? name
+          .slice(dot + 1)
+          .replace(/[^a-zA-Z0-9]/g, "")
+          .toLowerCase()
+      : "";
   return ext ? `${base}.${ext}` : base;
 }
 
@@ -255,7 +307,9 @@ export function useSetFichierFacture() {
   return useMutation({
     mutationFn: async ({ id, file }: { id: string; file: File }): Promise<string> => {
       const path = `${id}/${slugFilename(file.name)}`;
-      const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true, contentType: file.type || undefined });
+      const { error } = await supabase.storage
+        .from(BUCKET)
+        .upload(path, file, { upsert: true, contentType: file.type || undefined });
       if (error) throw error;
       const { error: e2 } = await supabase
         .from("factures_fournisseurs")
@@ -291,8 +345,14 @@ const ANON = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Lance l'OCR sur un fichier déjà uploadé ({facture_id}/{nom}). Lève une erreur
 // (code dans le message) si ok:false ou réseau → l'UI retombe en saisie manuelle.
-export async function ocrFacture(factureId: string, fichierPath: string, bucket = BUCKET): Promise<OcrExtraction> {
-  const { data: { session } } = await supabase.auth.getSession();
+export async function ocrFacture(
+  factureId: string,
+  fichierPath: string,
+  bucket = BUCKET,
+): Promise<OcrExtraction> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session) throw new Error("non_authentifie");
   let resp: Response;
   try {
@@ -309,7 +369,11 @@ export async function ocrFacture(factureId: string, fichierPath: string, bucket 
     throw new Error("reseau");
   }
   let body: { ok?: boolean; erreur?: string; extracted?: OcrExtraction } | null = null;
-  try { body = await resp.json(); } catch { /* corps non-JSON */ }
+  try {
+    body = await resp.json();
+  } catch {
+    /* corps non-JSON */
+  }
   if (!resp.ok || !body || body.ok === false) {
     throw new Error(body?.erreur ?? `http_${resp.status}`);
   }

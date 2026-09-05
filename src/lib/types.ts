@@ -1,4 +1,4 @@
-export type EntiteCode = 'PRO' | 'EXT' | 'INT';
+export type EntiteCode = "PRO" | "EXT" | "INT";
 
 export interface Entite {
   id: string;
@@ -7,7 +7,7 @@ export interface Entite {
   couleur: string; // hex
 }
 
-export type CategoriePrix = 'B2B' | 'prive' | 'luxe';
+export type CategoriePrix = "B2B" | "prive" | "luxe";
 
 export interface Client {
   id: string;
@@ -29,7 +29,7 @@ export interface Ouvrier {
   actif: boolean;
 }
 
-export type Unite = 'm2' | 'ml' | 'piece' | 'forfait' | 'h';
+export type Unite = "m2" | "ml" | "piece" | "forfait" | "h";
 
 export interface SousPoste {
   id: string;
@@ -86,7 +86,7 @@ export interface LigneDevis {
   estForfait?: boolean;
 }
 
-export type StatutDevis = 'brouillon' | 'envoye' | 'accepte' | 'refuse';
+export type StatutDevis = "brouillon" | "envoye" | "accepte" | "refuse";
 
 export interface Devis {
   id: string;
@@ -108,7 +108,7 @@ export interface Devis {
   createdAt: string;
 }
 
-export type StatutChantier = 'prospect' | 'signe' | 'en_cours' | 'termine';
+export type StatutChantier = "prospect" | "signe" | "en_cours" | "termine";
 
 export interface Chantier {
   id: string;
@@ -159,15 +159,15 @@ export interface FactureFournisseur {
   tauxTVA: number;
   montantTTC: number;
   nomFichier: string;
-  statut: 'a_valider' | 'valide';
+  statut: "a_valider" | "valide";
   uploadedAt: string;
 }
 
-export type Role = 'admin' | 'conducteur' | 'ouvrier';
+export type Role = "admin" | "conducteur" | "ouvrier";
 
 export interface ActivityItem {
   id: string;
-  type: 'devis' | 'facture' | 'pointage' | 'chantier';
+  type: "devis" | "facture" | "pointage" | "chantier";
   titre: string;
   description: string;
   entiteId?: string;
@@ -186,7 +186,7 @@ export interface AppState {
   factures: FactureFournisseur[];
   activity: ActivityItem[];
   currentRole: Role;
-  currentEntiteId: string | 'all';
+  currentEntiteId: string | "all";
   currentOuvrierId: string;
   dureeJourneeMin: number;
   validiteDevisJours: number;
