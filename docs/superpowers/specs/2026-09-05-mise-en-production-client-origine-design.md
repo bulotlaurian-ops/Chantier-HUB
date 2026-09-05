@@ -33,7 +33,40 @@ Conséquence sur la façon de travailler pendant l'implémentation :
   configuration une fois les vraies infos fournies) peuvent être faites directement,
   mais expliquées après coup si le changement n'est pas trivial.
 
-## Portée
+## Découverte en cours de brainstorming : le code est câblé pour la Suisse
+
+Le template est entièrement construit avec des hypothèses suisses en dur, pas seulement
+des valeurs d'exemple : devise francs suisses (`formatCHF`/`formatCHFShort` dans
+`src/lib/format.ts`, utilisées dans une vingtaine de fichiers), taux de TVA par défaut
+suisses (8.10 % / 2.60 % / 3.80 % / 0 %, valeur par défaut `8.10` sur les colonnes
+`taux_tva` de `lignes_devis` et `factures_fournisseurs`, seed de la table `tva_taux` dans
+`supabase/migrations/005_refonte_modele.sql`), un arrondi de caisse à 0.05 (fonctions `a05`
+dupliquées dans 4 fichiers : `src/routes/index.tsx`, `chantiers.index.tsx`,
+`chantiers.$id.tsx`, `devis.nouveau.tsx`, commentées « arrondi suisse »), et des libellés
+spécifiques (« IDE » pour le numéro d'entreprise au lieu de SIRET, référence à l'AFC dans
+l'écran Paramètres → TVA).
+
+L'entreprise d'origine est **française**, pas suisse. Ce n'est donc pas une simple valeur
+à personnaliser (comme la raison sociale) : c'est une dépendance technique qui doit être
+traitée **avant** la personnalisation, ajoutée ici comme nouveau bloc de la spec.
+
+### Bloc 0 (nouveau, prioritaire) : localisation France
+
+- Renommer/adapter `formatCHF`/`formatCHFShort` en équivalent EUR, et mettre à jour tous
+  les appels.
+- Remplacer le seed de `tva_taux` par les taux français (20 % normal, 10 % intermédiaire,
+  5.5 % réduit, 2.1 % particulier — à confirmer selon l'activité exacte de l'entreprise),
+  et les valeurs par défaut `8.10` des colonnes `taux_tva` concernées. Comme rien n'est
+  encore déployé, ces migrations peuvent être corrigées directement plutôt que patchées
+  par une migration correctrice.
+- Décider du sort de l'arrondi à 0.05 (spécifique aux espèces en Suisse, sans équivalent
+  légal en France) : le retirer et arrondir simplement au centime, ou le garder en option
+  configurable. Recommandation par défaut : le retirer, sauf besoin exprimé par
+  l'entreprise.
+- Adapter l'écran Paramètres → TVA (`parametres.index.tsx`, `TVA_RATES`) aux taux et
+  libellés français, retirer la référence à l'AFC.
+- Remplacer le libellé « IDE » par « SIRET » (ou le libellé pertinent) partout où il
+  apparaît (notamment `src/lib/pdf.ts`).
 
 ### Dans le périmètre
 
@@ -49,7 +82,21 @@ Conséquence sur la façon de travailler pendant l'implémentation :
    démonstration (`src/lib/cgv.ts`).
 3. **Nettoyage de dette technique signalée dans le README** :
    - Vérifier les écrans qui référencent encore le store Zustand legacy
-     (`src/lib/store.ts`) et les faire pointer sur Supabase (source de vérité).
+     (`src/lib/store.ts`) et les faire pointer sur Supabase (source de vérité). Investigation
+     faite pendant le brainstorming : 6 fichiers concernés
+     (`src/lib/auth.tsx`, `src/components/Badges.tsx`, `src/components/AppSidebar.tsx`,
+     `src/routes/chantiers.index.tsx`, `src/routes/devis.index.tsx`,
+     `src/routes/parametres.index.tsx`). Les remplacements réels existent déjà et sont
+     utilisables tels quels : `useEntites()` (`src/lib/queries/entites.ts`) pour les
+     données d'entité (nom/couleur/code), `useAuth()` (`profile.role`, `isAdmin`,
+     `isStaff`, déjà réel) pour le rôle courant. Cas particulier :
+     `parametres.index.tsx` a déjà migré une bonne partie vers Supabase
+     (`useParametres`/`useUpdateParametre`, comptes utilisateurs, taux horaires) — seul
+     l'onglet « Identité » (lignes ~70-88, données 100 % fictives et non sauvegardées :
+     IDE aléatoire, adresse « Route de Berne 12, Lausanne » en dur) et les presets
+     `FG_PRESETS`/`COEF_PRESETS` (qui référencent encore d'anciens codes d'entité
+     `MNC`/`MINT`/`MEXT`, antérieurs à la refonte 005) restent à traiter — non
+     sauvegardés nulle part, purement décoratifs.
    - Passer le code au formateur (`npx eslint src --fix`) en un commit dédié, séparé de
      tout changement fonctionnel.
 4. **Mise en route et validation** : configuration des entités réelles, des conditions
