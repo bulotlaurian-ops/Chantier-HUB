@@ -59,10 +59,10 @@ traitée **avant** la personnalisation, ajoutée ici comme nouveau bloc de la sp
   et les valeurs par défaut `8.10` des colonnes `taux_tva` concernées. Comme rien n'est
   encore déployé, ces migrations peuvent être corrigées directement plutôt que patchées
   par une migration correctrice.
-- Décider du sort de l'arrondi à 0.05 (spécifique aux espèces en Suisse, sans équivalent
-  légal en France) : le retirer et arrondir simplement au centime, ou le garder en option
-  configurable. Recommandation par défaut : le retirer, sauf besoin exprimé par
-  l'entreprise.
+- Retirer l'arrondi à 0.05 (spécifique aux espèces en Suisse, sans équivalent légal en
+  France) : les montants restent simplement arrondis au centime (comportement déjà natif
+  des colonnes `numeric(14,2)`), sans logique d'arrondi supplémentaire. Décision tranchée
+  par simplicité (YAGNI) plutôt que d'en faire une option configurable.
 - Adapter l'écran Paramètres → TVA (`parametres.index.tsx`, `TVA_RATES`) aux taux et
   libellés français, retirer la référence à l'AFC.
 - Remplacer le libellé « IDE » par « SIRET » (ou le libellé pertinent) partout où il
