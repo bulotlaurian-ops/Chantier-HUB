@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import type { StatutChantier, StatutDevis, CategoriePrix } from '@/lib/types';
-import { useStore } from '@/lib/store';
+import { useEntites } from '@/lib/queries/entites';
 import { useTheme } from '@/lib/theme';
 import { couleurLisible } from '@/lib/couleur';
 
 export function EntiteBadge({ entiteId, size = 'sm' }: { entiteId: string; size?: 'sm' | 'md' }) {
   const { theme } = useTheme();
-  const entite = useStore(s => s.entites.find(e => e.id === entiteId));
+  const { data: entites } = useEntites();
+  const entite = entites?.find(e => e.id === entiteId);
   if (!entite) return null;
   const couleur = couleurLisible(entite.couleur, theme === 'dark');
   return (
@@ -25,7 +26,8 @@ export function EntiteBadge({ entiteId, size = 'sm' }: { entiteId: string; size?
 
 export function EntiteDot({ entiteId, className }: { entiteId: string; className?: string }) {
   const { theme } = useTheme();
-  const entite = useStore(s => s.entites.find(e => e.id === entiteId));
+  const { data: entites } = useEntites();
+  const entite = entites?.find(e => e.id === entiteId);
   if (!entite) return null;
   return <span className={cn('inline-block w-2 h-2 rounded-full', className)} style={{ backgroundColor: couleurLisible(entite.couleur, theme === 'dark') }} />;
 }
