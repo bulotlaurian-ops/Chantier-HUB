@@ -21,7 +21,7 @@ import { useChantiersList, type ChantierEnrichi } from '@/lib/queries/chantiers'
 
 export const Route = createFileRoute('/factures-fournisseurs/')({ component: FacturesGate });
 
-const TVA_OPTS = ['8.1', '3.8', '2.6', '0'];
+const TVA_OPTS = ['20', '10', '5.5', '0'];
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const sommeRepartie = (f: FactureEnrichie) => r2(f.repartitions.reduce((s, r) => s + Number(r.montant_ht_affecte), 0));
 
@@ -345,7 +345,7 @@ function FactureDialog({ open, onOpenChange, facture, chantiers }: {
   const [numero, setNumero] = useState('');
   const [date, setDate] = useState('');
   const [montantHT, setMontantHT] = useState('0');
-  const [tva, setTva] = useState('8.1');
+  const [tva, setTva] = useState('20');
   const [lignes, setLignes] = useState<LigneRep[]>([{ chantier_id: '', montant: '' }]);
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -370,7 +370,7 @@ function FactureDialog({ open, onOpenChange, facture, chantiers }: {
         : [{ chantier_id: '', montant: '' }]);
       setFile(null);
     } else {
-      setFournisseur(''); setNumero(''); setDate(''); setMontantHT('0'); setTva('8.1');
+      setFournisseur(''); setNumero(''); setDate(''); setMontantHT('0'); setTva('20');
       setLignes([{ chantier_id: '', montant: '' }]); setFile(null);
     }
   }, [open, facture]);

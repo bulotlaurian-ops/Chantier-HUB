@@ -219,7 +219,7 @@ create table devis (
   coefficient_global numeric(6,3) default 1,
   total_ht numeric(14,2) not null default 0,
   total_tva numeric(14,2) not null default 0,
-  total_ttc numeric(14,2) not null default 0,         -- arrondi suisse 0.05 appliqué applicativement
+  total_ttc numeric(14,2) not null default 0,
   arrondi numeric(6,2) not null default 0,
   cout_revient_total numeric(14,2) not null default 0,
   marge numeric(14,2) not null default 0,             -- dérivée : total_ht - cout_revient (peut être nulle si non calculable)
@@ -242,7 +242,7 @@ create table lignes_devis (
   prix_unitaire_ht numeric(12,2) not null default 0,
   remise_pct numeric(5,2) not null default 0,         -- remise PAR LIGNE (colonne "%")
   prix_revient_unitaire numeric(12,2) not null default 0,
-  taux_tva numeric(5,2) not null default 8.10,        -- figé au devis
+  taux_tva numeric(5,2) not null default 20.00,       -- figé au devis
   total_ht numeric(14,2) not null default 0,
   est_option boolean not null default false,          -- ligne "option non totalisée" (total 0)
   est_titre  boolean not null default false,          -- ligne de section/titre
@@ -271,7 +271,7 @@ create table pointages (
 create table factures_fournisseurs (
   id uuid primary key default gen_random_uuid(),
   fournisseur text not null, numero_facture text, date date,
-  montant_ht numeric(14,2) not null default 0, taux_tva numeric(5,2) not null default 8.10,
+  montant_ht numeric(14,2) not null default 0, taux_tva numeric(5,2) not null default 20.00,
   montant_ttc numeric(14,2) not null default 0,
   nom_fichier text, fichier_url text, statut statut_facture not null default 'a_valider',
   uploaded_at timestamptz not null default now()
@@ -399,8 +399,8 @@ insert into categories_tarifaires (code, libelle, type, ordre) values
   ('reconstr', 'Reconstruction',      'nature_projet', 1);
 
 insert into tva_taux (type, taux, date_debut) values
-  ('standard',8.10,'2024-01-01'),('reduit',2.60,'2024-01-01'),
-  ('hebergement',3.80,'2024-01-01'),('exonere',0.00,'2024-01-01');
+  ('standard',20.00,'2024-01-01'),('reduit',5.50,'2024-01-01'),
+  ('hebergement',10.00,'2024-01-01'),('exonere',0.00,'2024-01-01');
 
 -- Conditions de paiement réelles
 insert into conditions_paiement (entite_id, type_client, libelle, ordre)

@@ -32,9 +32,9 @@ function ParametresGate() {
 }
 
 const TVA_RATES = [
-  { label: 'Standard', value: 8.1, usage: 'Prestations & matériaux courants' },
-  { label: 'Réduit', value: 2.6, usage: 'Biens de première nécessité' },
-  { label: 'Hébergement', value: 3.8, usage: 'Nuitées hôtelières' },
+  { label: 'Standard', value: 20, usage: 'Prestations & matériaux courants' },
+  { label: 'Intermédiaire', value: 10, usage: 'Travaux de rénovation (logement > 2 ans)' },
+  { label: 'Réduit', value: 5.5, usage: 'Travaux d’amélioration énergétique' },
   { label: 'Exonéré', value: 0, usage: 'Export, prestations exclues' },
 ];
 
@@ -121,7 +121,7 @@ function Parametres() {
                   <Input type="number" step="0.1" defaultValue={t.value} className="w-24 text-right" />
                 </div>
               ))}
-              <p className="text-xs text-muted-foreground italic mt-2">Taux applicables dès le 01.01.2024 — modifiables si l'AFC publie de nouveaux taux.</p>
+              <p className="text-xs text-muted-foreground italic mt-2">Taux applicables dès le 01.01.2024 — modifiables si l'administration fiscale publie de nouveaux taux.</p>
             </CardContent>
           </Card>
         </TabsContent>

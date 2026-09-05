@@ -714,7 +714,7 @@ function NouveauDevis() {
                 </div>
                 <div className="rounded-md border p-3 text-sm space-y-1">
                   <Row label="Total HT" value={formatEUR(totaux.total_ht)} />
-                  <Row label="TVA 8.1 %" value={formatEUR(totaux.total_tva)} />
+                  <Row label="TVA" value={formatEUR(totaux.total_tva)} />
                   {Math.abs(totaux.arrondi) > 0.0001 && <Row label="Arrondi (0.05)" value={formatEUR(totaux.arrondi)} />}
                   <Row label="Total TTC" value={formatEUR(totaux.total_ttc)} bold />
                 </div>

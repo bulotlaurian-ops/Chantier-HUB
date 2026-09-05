@@ -69,7 +69,7 @@ function DevisDetail() {
       const logoUrl = LOGOS[code];
       const logo = logoUrl ? await urlToDataUrl(logoUrl).catch(() => undefined) : undefined;
       // Taux TVA affiché = taux effectif dérivé des totaux (jamais codé en dur, §7)
-      const tauxAffiche = d.total_ht > 0 ? Math.round((d.total_tva / d.total_ht) * 1000) / 10 : (d.lignes[0]?.taux_tva ?? 8.1);
+      const tauxAffiche = d.total_ht > 0 ? Math.round((d.total_tva / d.total_ht) * 1000) / 10 : (d.lignes[0]?.taux_tva ?? 20);
       telechargerDevisPdf({
         numero: d.numero,
         date_creation: d.date_creation,
