@@ -101,7 +101,7 @@ export function LoginScreen() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="prenom@entreprise.ch"
+                    placeholder="prenom@entreprise.fr"
                     className="h-11"
                   />
                 </div>
@@ -167,7 +167,7 @@ export function LoginScreen() {
                     required
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
-                    placeholder="prenom@entreprise.ch"
+                    placeholder="prenom@entreprise.fr"
                     className="h-11"
                   />
                 </div>
