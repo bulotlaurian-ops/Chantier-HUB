@@ -40,3 +40,5 @@ supabase/.temp/
 # Fichiers samples ponctuels non versionnés (dépôts locaux ad hoc)
 samples/2024-11-26 COUT CONSTRUCTION.xlsb
 samples/Offre 4858382.pdf
+
+.vercel
