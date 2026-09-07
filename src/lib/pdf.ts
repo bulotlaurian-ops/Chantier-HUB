@@ -10,16 +10,15 @@ import { CGV_PAR_CODE } from "./cgv";
 // Le PDF MET EN FORME uniquement : aucun total n'est recalculé (données 005).
 // =====================================================================
 
-// Coordonnées COMMUNES aux 3 entités. `rue` / `npaLocalite` = bloc en-tête de la
+// Coordonnées de l'entreprise. `rue` / `npaLocalite` = bloc en-tête de la
 // page de garde (2 lignes, en gras) ; `adresse` = version compacte du pied de page.
-// ⚠️ À PERSONNALISER : remplacez ces valeurs par celles de votre entreprise avant
-// d'émettre le moindre devis réel (elles sont imprimées sur chaque PDF).
+// ⚠️ IBAN à renseigner (n'est pas une donnée publique, en attente de l'entreprise).
 const SOCIETE = {
-  rue: "Rue de l’Exemple 1",
-  npaLocalite: "1000 VOTRE-VILLE",
-  adresse: "Rue de l’Exemple 1 — 1000 Votre-Ville",
-  siret: "000 000 000 00000",
-  iban: "CH00 0000 0000 0000 0000 0 — Votre banque",
+  rue: "6B Chemin Vieux de Montolieu",
+  npaLocalite: "11310 SAINT-DENIS",
+  adresse: "6B Chemin Vieux de Montolieu — 11310 Saint-Denis",
+  siret: "753 992 163 00018",
+  iban: "⚠️ IBAN À RENSEIGNER",
 };
 
 // Texte d'accompagnement de la page de garde (identique pour les 3 entités).
@@ -53,14 +52,13 @@ const INTRO_BLOCS: { texte: string; gapApres: number }[] = [
 // Coordonnées SPÉCIFIQUES par entité (tél / email / site). Le site n'existe pas
 // dans PdfDevisData → centralisé ici (données passées inchangées).
 // ⚠️ À PERSONNALISER au même titre que SOCIETE ci-dessus.
+// ⚠️ Téléphone/email à confirmer avec l'entreprise.
 const ENTITE_CONTACT: Record<string, { tel: string; email: string; site: string }> = {
   PRO: {
-    tel: "000 000 00 00",
-    email: "contact@artisan-pro.example",
-    site: "www.artisan-pro.example",
+    tel: "⚠️ TÉLÉPHONE À RENSEIGNER",
+    email: "⚠️ EMAIL À RENSEIGNER",
+    site: "",
   },
-  EXT: { tel: "000 000 00 01", email: "contact@exterieur.example", site: "www.exterieur.example" },
-  INT: { tel: "000 000 00 02", email: "contact@interieur.example", site: "www.interieur.example" },
 };
 
 export interface PdfEntite {

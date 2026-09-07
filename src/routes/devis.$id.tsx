@@ -58,8 +58,6 @@ const STATUTS: { value: DevisRow["statut"]; label: string }[] = [
 // tél/email/site par entité sont centralisées dans src/lib/pdf.ts.
 const LOGOS: Record<string, string> = {
   PRO: "/logos/logo-pro.png",
-  EXT: "/logos/logo-ext.png",
-  INT: "/logos/logo-int.png",
 };
 
 async function urlToDataUrl(url: string): Promise<string> {

@@ -10,7 +10,7 @@ import type { Prestation } from "@/lib/queries/prestations";
 
 export const SANS_FAMILLE = "— Sans famille";
 export const FOURNISSEUR_INTERNE = "Interne"; // libellé des prestations à fournisseur NULL
-export const ENTITES = ["PRO", "EXT", "INT"] as const;
+export const ENTITES = ["PRO"] as const;
 
 export interface FiltresPrestation {
   q: string;
