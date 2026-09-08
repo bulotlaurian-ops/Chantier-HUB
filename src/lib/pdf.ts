@@ -18,7 +18,7 @@ const SOCIETE = {
   npaLocalite: "11310 SAINT-DENIS",
   adresse: "6B Chemin Vieux de Montolieu — 11310 Saint-Denis",
   siret: "753 992 163 00018",
-  iban: "⚠️ IBAN À RENSEIGNER",
+  iban: "IBAN A RENSEIGNER",
 };
 
 // Texte d'accompagnement de la page de garde (identique pour les 3 entités).
@@ -55,8 +55,8 @@ const INTRO_BLOCS: { texte: string; gapApres: number }[] = [
 // ⚠️ Téléphone/email à confirmer avec l'entreprise.
 const ENTITE_CONTACT: Record<string, { tel: string; email: string; site: string }> = {
   PRO: {
-    tel: "⚠️ TÉLÉPHONE À RENSEIGNER",
-    email: "⚠️ EMAIL À RENSEIGNER",
+    tel: "TELEPHONE A RENSEIGNER",
+    email: "EMAIL A RENSEIGNER",
     site: "",
   },
 };
