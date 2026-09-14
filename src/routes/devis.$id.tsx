@@ -110,7 +110,13 @@ function DevisDetail() {
           date_creation: d.date_creation,
           objet: d.objet,
           entite: { nom: d.entite?.nom ?? "", code, couleur: d.entite?.couleur ?? "#1F2937" },
-          client: { nom: d.client?.nom ?? "", adresse: d.client?.adresse, ville: d.client?.ville },
+          client: {
+            nom: d.client?.nom ?? "",
+            adresse: d.client?.adresse,
+            ville: d.client?.ville,
+            telephone: d.client?.telephone,
+            email: d.client?.email,
+          },
           lignes: d.lignes.map((l) => ({
             libelle: l.libelle,
             unite: l.unite,

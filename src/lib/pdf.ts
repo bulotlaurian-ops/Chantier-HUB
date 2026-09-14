@@ -5,13 +5,15 @@ import { formatMontant, formatDateLong } from "./format";
 import { CGV_PAR_CODE } from "./cgv";
 
 // =====================================================================
-// Génération PDF d'un devis Artisan Pro — template unique paramétré par entité.
-// Page 1 = garde ; pages suivantes = tableau des lignes ; dernière = récap.
+// Génération PDF d'un devis — template unique paramétré par entité.
+// Une seule page de contenu (en-tête, client/date/objet, tableau, totaux,
+// paiement, visa), qui déborde sur des pages suivantes si le tableau est
+// trop long ; les CGV de l'entité sont ajoutées en dernier.
 // Le PDF MET EN FORME uniquement : aucun total n'est recalculé (données 005).
 // =====================================================================
 
-// Coordonnées de l'entreprise. `rue` / `npaLocalite` = bloc en-tête de la
-// page de garde (2 lignes, en gras) ; `adresse` = version compacte du pied de page.
+// Coordonnées de l'entreprise. `adresse` = pied de page uniquement (le
+// papier à en-tête n'affiche plus l'adresse en haut, cf. modèle papier).
 // ⚠️ IBAN à renseigner (n'est pas une donnée publique, en attente de l'entreprise).
 const SOCIETE = {
   rue: "6B Chemin Vieux de Montolieu",
@@ -19,45 +21,17 @@ const SOCIETE = {
   adresse: "6B Chemin Vieux de Montolieu — 11310 Saint-Denis",
   siret: "753 992 163 00018",
   iban: "IBAN A RENSEIGNER",
+  formeJuridique: "EURL au capital de 4 000 Euros",
 };
 
-// Texte d'accompagnement de la page de garde (identique pour les 3 entités).
-// `gapApres` = respiration en mm après le bloc (0 = simple retour à la ligne).
-const INTRO_BLOCS: { texte: string; gapApres: number }[] = [
-  { texte: "Madame, Monsieur,", gapApres: 5 },
-  // gapApres 1.5 = simple retour à la ligne, mais assez lisible pour ne pas se
-  // confondre avec le repli automatique du paragraphe ci-dessus.
-  {
-    texte:
-      "Nous vous remercions de votre demande concernant le projet susmentionné et vous soumettons notre offre basée sur nos échanges.",
-    gapApres: 1.5,
-  },
-  { texte: "Vous trouverez ci-après le détail de nos prestations.", gapApres: 5 },
-  {
-    texte:
-      "Veuillez consulter nos conditions générales de vente (CGV), de livraison et de garantie.",
-    gapApres: 5,
-  },
-  {
-    texte: "Nos techniciens restent à votre disposition pour tous renseignements complémentaires.",
-    gapApres: 5,
-  },
-  {
-    texte: "Nous serions très heureux de participer à la réalisation de votre projet.",
-    gapApres: 5,
-  },
-  { texte: "Meilleures salutations", gapApres: 0 },
-];
-
-// Coordonnées SPÉCIFIQUES par entité (tél / email / site). Le site n'existe pas
+// Coordonnées SPÉCIFIQUES par entité (tél / email / accroche). Le site n'existe pas
 // dans PdfDevisData → centralisé ici (données passées inchangées).
-// ⚠️ À PERSONNALISER au même titre que SOCIETE ci-dessus.
-// ⚠️ Téléphone/email à confirmer avec l'entreprise.
-const ENTITE_CONTACT: Record<string, { tel: string; email: string; site: string }> = {
+const ENTITE_CONTACT: Record<string, { tel: string; email: string; site: string; tagline: string }> = {
   PRO: {
-    tel: "TELEPHONE A RENSEIGNER",
-    email: "EMAIL A RENSEIGNER",
+    tel: "06 11 30 50 13",
+    email: "pascalgasc@yahoo.fr",
     site: "",
+    tagline: "Neuf & rénovation Isolation Peinture",
   },
 };
 
@@ -74,6 +48,8 @@ export interface PdfClient {
   adresse?: string | null;
   ville?: string | null;
   pays?: string | null;
+  telephone?: string | null;
+  email?: string | null;
 }
 export interface PdfLigne {
   libelle: string;
@@ -115,11 +91,11 @@ function formatQte(q: number): string {
   return Number.isInteger(q) ? String(q) : String(q);
 }
 
-// Dessine un logo (data URL) dans une boîte maxW×maxH, ancré en haut à droite.
+// Dessine un logo (data URL) dans une boîte maxW×maxH, ancré en haut à gauche (x fixe).
 function drawLogo(
   doc: jsPDF,
   logo: string | undefined,
-  w: number,
+  x: number,
   topY: number,
   maxW: number,
   maxH: number,
@@ -130,7 +106,7 @@ function drawLogo(
     const scale = Math.min(maxW / p.width, maxH / p.height);
     const lw = p.width * scale,
       lh = p.height * scale;
-    doc.addImage(logo, "PNG", w - 14 - lw, topY, lw, lh);
+    doc.addImage(logo, "PNG", x, topY, lw, lh);
     return lh;
   } catch (e) {
     console.warn("[pdf] logo non rendu :", e);
@@ -138,7 +114,7 @@ function drawLogo(
   }
 }
 
-// Pied de page (toutes les pages) : filet + coordonnées, centré, 8 pt.
+// Pied de page (toutes les pages) : filet + adresse/contact, puis mention légale + SIRET, centré, 8 pt.
 function drawFooter(doc: jsPDF, w: number, h: number, code: string): void {
   const c = ENTITE_CONTACT[code];
   doc.setDrawColor(...LINE);
@@ -147,10 +123,8 @@ function drawFooter(doc: jsPDF, w: number, h: number, code: string): void {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...GREY);
-  const l1 = [SOCIETE.adresse, c && `T. ${c.tel}`, c?.email, c?.site]
-    .filter(Boolean)
-    .join("   ·   ");
-  const l2 = `SIRET ${SOCIETE.siret}   ·   IBAN ${SOCIETE.iban}`;
+  const l1 = [SOCIETE.adresse, c && `T. ${c.tel}`, c?.email, c?.site].filter(Boolean).join("   ·   ");
+  const l2 = `${SOCIETE.formeJuridique}   ·   SIRET ${SOCIETE.siret}`;
   doc.text(l1, w / 2, h - 11, { align: "center" });
   doc.text(l2, w / 2, h - 7, { align: "center" });
 }
@@ -231,147 +205,116 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
   const h = doc.internal.pageSize.getHeight();
   const [cr, cg, cb] = hexToRgb(d.entite.couleur);
   const code = d.entite.code;
+  const c = ENTITE_CONTACT[code];
 
-  // =================== PAGE 1 — GARDE ===================
-  const logoH = drawLogo(doc, logoDataUrl, w, 12, 60, 30);
+  // =================== EN-TÊTE (page 1) ===================
+  const logoH = drawLogo(doc, logoDataUrl, 14, 12, 58, 26);
 
-  // Bloc Artisan Pro (haut-gauche) — nom + adresse sur 3 lignes, TOUT en gras.
+  let hy = 12 + logoH + (logoH > 0 ? 5 : 0);
+  if (!logoDataUrl) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.setTextColor(cr, cg, cb);
+    doc.text(d.entite.nom, 14, hy);
+    hy += 7;
+  }
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(9);
+  doc.setTextColor(...GREY);
+  if (c?.tagline) {
+    doc.text(c.tagline, 14, hy);
+    hy += 5;
+  }
+  if (c?.tel || c?.email) {
+    doc.text(
+      [c?.tel && `tél : ${c.tel}`, c?.email && `mail : ${c.email}`].filter(Boolean).join("   "),
+      14,
+      hy,
+    );
+    hy += 5;
+  }
+
+  // Bloc « Devis nº… » (haut-droite)
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...DARK);
-  doc.setFontSize(13);
-  doc.text(d.entite.nom.toUpperCase(), 14, 18);
-  doc.setFontSize(9.5);
-  doc.text(SOCIETE.rue, 14, 24);
-  doc.text(SOCIETE.npaLocalite, 14, 29);
+  doc.setFontSize(19);
+  doc.setTextColor(cr, cg, cb);
+  doc.text(`Devis ${d.numero}`, w - 14, 22, { align: "right" });
 
-  // Bloc client (droite, sous le logo)
-  let cy = Math.max(12 + logoH + 12, 42);
+  // =================== CLIENT (gauche) / DATE + OBJET (droite) ===================
+  const infoY = Math.max(hy + 8, 46);
+
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(...GREY);
-  doc.text("CLIENT", 120, cy);
-  doc.setFontSize(10.5);
-  doc.setTextColor(...DARK);
-  cy += 6;
+  doc.text("CLIENT", 14, infoY);
+  let cy = infoY + 6;
   doc.setFont("helvetica", "bold");
-  doc.text(d.client.nom, 120, cy);
+  doc.setFontSize(11);
+  doc.setTextColor(...DARK);
+  doc.text(d.client.nom, 14, cy);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
+  doc.setFontSize(9.5);
   if (d.client.adresse) {
     cy += 5.5;
-    doc.text(d.client.adresse, 120, cy);
+    doc.text(d.client.adresse, 14, cy);
   }
   if (d.client.ville) {
     cy += 5.5;
-    doc.text(d.client.ville, 120, cy);
+    doc.text(d.client.ville, 14, cy);
   }
-  if (d.client.pays) {
+  if (d.client.telephone || d.client.email) {
     cy += 5.5;
-    doc.text(d.client.pays, 120, cy);
+    doc.setFontSize(9);
+    doc.setTextColor(...GREY);
+    doc.text(
+      [d.client.telephone && `Tél. ${d.client.telephone}`, d.client.email]
+        .filter(Boolean)
+        .join("   ·   "),
+      14,
+      cy,
+    );
   }
+  const clientBottom = cy + 4;
 
-  // Tableau de référence (encadré, gauche)
-  const refRows: [string, string][] = [
-    ["N° de devis", d.numero],
-    ["Date", formatDateLong(d.date_creation)],
-    ["Référence", d.objet?.trim() || "—"],
-    ["Validité", "30 jours dès l’émission"],
-    // N° TVA client : masqué (non présent dans les données passées).
-  ];
-  const refY = Math.max(cy + 14, 78);
+  // Bloc Date / Objet — encadré, à droite (même technique de rendu que l'ancien
+  // tableau de référence : hauteur de ligne variable si le texte déborde).
+  const boxX = 128;
+  const refRows: [string, string][] = [["Date", formatDateLong(d.date_creation)]];
+  if (d.objet?.trim()) refRows.push(["Objet", d.objet.trim()]);
   const rowH = 7;
   doc.setDrawColor(...LINE);
   doc.setLineWidth(0.2);
-  // Hauteur de ligne VARIABLE : une valeur qui déborde sur 2+ lignes (typiquement
-  // une longue référence) pousse la ligne suivante au lieu de la chevaucher.
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   const valLineH = doc.getTextDimensions("A").h;
-  let ry = refY;
+  let ry = infoY;
   refRows.forEach((r) => {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    const val = doc.splitTextToSize(r[1], w - 14 - 52) as string[];
+    const val = doc.splitTextToSize(r[1], w - 14 - (boxX + 20)) as string[];
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
     doc.setTextColor(...GREY);
-    doc.text(r[0].toUpperCase(), 14, ry);
+    doc.text(r[0].toUpperCase(), boxX, ry);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.setTextColor(...DARK);
-    doc.text(val, 52, ry);
-    // Le filet reste à 4.5 mm au-dessus de la ligne suivante (comme en mono-ligne).
+    doc.text(val, boxX + 20, ry);
     const blockH = rowH + (val.length - 1) * valLineH;
-    doc.line(14, ry + blockH - 4.5, w - 14, ry + blockH - 4.5);
+    doc.line(boxX, ry + blockH - 4.5, w - 14, ry + blockH - 4.5);
     ry += blockH;
   });
 
-  // Titre + texte d'accompagnement
-  let ty = ry + 14;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(17);
-  doc.setTextColor(cr, cg, cb);
-  doc.text(`Devis ${d.numero}`, 14, ty);
+  const tableStartY = Math.max(clientBottom, ry) + 8;
 
-  ty += 12;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(...DARK);
-  const introLineH = doc.getTextDimensions("A").h;
-  for (const bloc of INTRO_BLOCS) {
-    const lines = doc.splitTextToSize(bloc.texte, w - 28) as string[];
-    doc.text(lines, 14, ty);
-    ty += lines.length * introLineH + bloc.gapApres;
-  }
-  // (Les CGV complètes figurent en fin de document.)
-
-  // Zone de signature — ancrée en bas de la page de garde, au-dessus du pied de page.
-  // Convention : libellé EN HAUT, zone d'écriture juste en dessous, filet qui la
-  // ferme. Le nom et la date tiennent sur une ligne ; la signature a besoin de
-  // hauteur, d'où deux gabarits distincts.
-  const H_NOM = 10; // hauteur d'écriture pour « nom » et « date » (1 ligne)
-  const H_SIGNATURE = 22; // hauteur d'écriture pour la signature
-  const ECART_CHAMPS = 8; // entre le filet « nom / date » et le libellé « signature »
-  const idColW = (w - 28 - 10) / 2;
-
-  const sigRuleY = h - 26; // filet fermant la signature
-  const sigLabelY = sigRuleY - H_SIGNATURE; // libellé « SIGNATURE »
-  const idRuleY = sigLabelY - ECART_CHAMPS; // filets « nom » et « date »
-  const idLabelY = idRuleY - H_NOM; // libellés « nom » et « date »
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(...DARK);
-  doc.text("Signature — acceptation du devis", 14, idLabelY - 13);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(...GREY);
-  doc.text("Bon pour accord, à retourner daté et signé.", 14, idLabelY - 8);
-
-  doc.setFontSize(8.5);
-  doc.setTextColor(...GREY);
-  doc.text("NOM ET PRÉNOM", 14, idLabelY);
-  doc.text("DATE", 14 + idColW + 10, idLabelY);
-  doc.text("SIGNATURE", 14, sigLabelY);
-
-  doc.setDrawColor(...LINE);
-  doc.setLineWidth(0.2);
-  doc.line(14, idRuleY, 14 + idColW, idRuleY);
-  doc.line(14 + idColW + 10, idRuleY, w - 14, idRuleY);
-  doc.line(14, sigRuleY, w - 14, sigRuleY);
-
-  drawFooter(doc, w, h, code);
-
-  // =================== PAGES 2+ — TABLEAU DES LIGNES ===================
-  doc.addPage();
-
+  // =================== TABLEAU DES LIGNES (démarre page 1, déborde si besoin) ===================
   // Colonne « Remise » affichée uniquement si au moins une ligne porte une remise.
   const hasRemise = d.lignes.some((l) => !l.est_titre && l.remise_pct > 0);
-  const N = hasRemise ? 7 : 6;
+  const N = hasRemise ? 6 : 5;
   const head = [
     hasRemise
-      ? ["Pos.", "Désignation", "Unité", "Quantité", "Prix unit. HT", "Remise", "Montant HT"]
-      : ["Pos.", "Désignation", "Unité", "Quantité", "Prix unit. HT", "Montant HT"],
+      ? ["Désignation", "Unité", "Quantité", "Prix unit. HT", "Remise", "Montant HT"]
+      : ["Désignation", "Unité", "Quantité", "Prix unit. HT", "Montant HT"],
   ];
   const titreCount = d.lignes.filter((l) => l.est_titre).length;
 
@@ -379,8 +322,7 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
   const rowCumul: number[] = []; // cumul HT après chaque ligne de body (pour le report)
   let acc = 0,
     secSum = 0,
-    secOpen = false,
-    pos = 0;
+    secOpen = false;
 
   const pushSubtotal = () => {
     body.push([
@@ -412,7 +354,6 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
       secSum = 0;
       continue;
     }
-    pos += 1;
     const isOpt = l.est_option;
     const lib =
       isOpt && !/option|totalis/i.test(l.libelle)
@@ -420,7 +361,6 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
         : l.libelle;
     const st = isOpt ? { fontStyle: "italic" as const, textColor: GREY } : {};
     const cells: RowInput = [
-      { content: String(pos), styles: { ...st, halign: "center" as const } },
       { content: lib, styles: st },
       { content: l.unite ?? "", styles: { ...st, halign: "center" as const } },
       { content: formatQte(l.quantite), styles: { ...st, halign: "right" as const } },
@@ -447,7 +387,7 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
 
   const pageLastRow: Record<number, number> = {};
   autoTable(doc, {
-    startY: 26,
+    startY: tableStartY,
     margin: { top: 24, left: 14, right: 14, bottom: 26 },
     theme: "plain",
     rowPageBreak: "avoid",
@@ -469,21 +409,19 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
     },
     columnStyles: hasRemise
       ? {
-          0: { cellWidth: 11, halign: "center" },
-          1: { cellWidth: "auto" },
-          2: { cellWidth: 15, halign: "center" },
-          3: { cellWidth: 18, halign: "right" },
-          4: { cellWidth: 26, halign: "right" },
-          5: { cellWidth: 16, halign: "right" },
-          6: { cellWidth: 26, halign: "right" },
+          0: { cellWidth: "auto" },
+          1: { cellWidth: 16, halign: "center" },
+          2: { cellWidth: 20, halign: "right" },
+          3: { cellWidth: 28, halign: "right" },
+          4: { cellWidth: 18, halign: "right" },
+          5: { cellWidth: 28, halign: "right" },
         }
       : {
-          0: { cellWidth: 12, halign: "center" },
-          1: { cellWidth: "auto" },
-          2: { cellWidth: 16, halign: "center" },
-          3: { cellWidth: 20, halign: "right" },
-          4: { cellWidth: 28, halign: "right" },
-          5: { cellWidth: 28, halign: "right" },
+          0: { cellWidth: "auto" },
+          1: { cellWidth: 18, halign: "center" },
+          2: { cellWidth: 22, halign: "right" },
+          3: { cellWidth: 30, halign: "right" },
+          4: { cellWidth: 30, halign: "right" },
         },
     didDrawCell: (data) => {
       if (data.section === "body") {
@@ -492,10 +430,10 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
     },
   });
 
-  // =================== DERNIÈRE PAGE — RÉCAP FINANCIER ===================
+  // =================== TOTAUX ===================
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let y = (doc as any).lastAutoTable.finalY + 12;
-  if (y > h - 60) {
+  if (y > h - 70) {
     doc.addPage();
     y = 30;
   }
@@ -511,13 +449,13 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
   };
   doc.setFontSize(10);
   rec("Total HT", formatMontant(d.total_ht));
-  rec(`TVA ${d.taux_tva}%`, formatMontant(d.total_tva));
+  rec(`Taux de TVA (${d.taux_tva}%)`, formatMontant(d.total_tva));
   if (Math.abs(d.arrondi) > 0.0001) rec("Arrondi", formatMontant(d.arrondi));
   doc.setDrawColor(...LINE);
   doc.setLineWidth(0.3);
   doc.line(labelX, y - 3, valX, y - 3);
   doc.setFontSize(11.5);
-  rec("Total TTC", formatMontant(d.total_ttc), true, [cr, cg, cb]);
+  rec("Total TTC net à payer", formatMontant(d.total_ttc), true, [cr, cg, cb]);
 
   // Notes et remarques (optionnel)
   let bx = y + 6;
@@ -533,17 +471,51 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
     doc.text(lines, 14, bx + 5);
     bx += 5 + lines.length * 4.5 + 6;
   }
-  if (d.conditions_paiement && d.conditions_paiement.trim()) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);
-    doc.setTextColor(...DARK);
-    doc.text("Conditions de paiement", 14, bx);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(...DARK);
-    const lines = d.conditions_paiement.trim().split("\n");
-    lines.forEach((ln, i) => doc.text(ln, 14, bx + 5 + i * 4.5));
+
+  // =================== PAIEMENT + VISA ===================
+  const boxGap = 8;
+  const boxW3 = (w - 28 - boxGap) / 2;
+  const boxH3 = 30;
+  if (bx + boxH3 > h - 24) {
+    doc.addPage();
+    bx = 30;
   }
+
+  doc.setDrawColor(...LINE);
+  doc.setLineWidth(0.2);
+
+  // Paiement (gauche)
+  doc.rect(14, bx, boxW3, boxH3, "S");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.5);
+  doc.setTextColor(...DARK);
+  doc.text("Paiement", 17, bx + 6);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  const condLines = (
+    d.conditions_paiement?.trim()
+      ? (doc.splitTextToSize(d.conditions_paiement.trim(), boxW3 - 6) as string[])
+      : ["Conditions de paiement à préciser."]
+  ).slice(0, 5);
+  doc.text(condLines, 17, bx + 13);
+
+  // Visa (droite, 2 colonnes)
+  const visaX = 14 + boxW3 + boxGap;
+  doc.rect(visaX, bx, boxW3, boxH3, "S");
+  doc.line(visaX + boxW3 / 2, bx, visaX + boxW3 / 2, bx + boxH3);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...DARK);
+  doc.text("Visa du client", visaX + 3, bx + 6);
+  doc.text("Visa de l'entreprise", visaX + boxW3 / 2 + 3, bx + 6);
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(7.5);
+  doc.setTextColor(...GREY);
+  const mention = doc.splitTextToSize(
+    "« Bon pour accord, accepte les conditions générales »",
+    boxW3 / 2 - 6,
+  ) as string[];
+  doc.text(mention, visaX + 3, bx + 12);
 
   // =================== CGV EN FIN DE DOCUMENT (par entité) ===================
   const contentPages = doc.getNumberOfPages(); // dernière page de contenu (avant CGV)
@@ -555,16 +527,15 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
   for (let p = 1; p <= pageCount; p++) {
     doc.setPage(p);
     drawFooter(doc, w, h, code);
-    // Page X/Y en zone pied de page (centré, au-dessus du filet) — pas sous le logo.
-    if (p >= 2) {
+    if (pageCount > 1) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(...GREY);
       doc.text(`Page ${p} / ${pageCount}`, w / 2, h - 19, { align: "center" });
     }
-    // En-tête compact + report : uniquement sur les pages de contenu (tableau/récap).
+    // En-tête compact de suite : uniquement sur les pages 2+ du contenu (le
+    // tableau a débordé de la page 1). La page 1 porte déjà son propre en-tête complet.
     if (p >= 2 && p <= contentPages) {
-      drawLogo(doc, logoDataUrl, w, 8, 30, 14);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
       doc.setTextColor(...DARK);
@@ -573,15 +544,22 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
       doc.setFontSize(8);
       doc.setTextColor(...GREY);
       doc.text(`Devis Nº ${d.numero} — ${dateStr}`, 14, 17.5);
+    }
+    if (p <= contentPages) {
+      // À reporter en bas de page si le tableau continue sur la page suivante
+      // (vaut aussi pour la page 1, qui porte désormais le début du tableau).
       if (p < contentPages && pageLastRow[p] != null) {
         const v = rowCumul[pageLastRow[p]] ?? 0;
+        doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
         doc.setTextColor(...DARK);
         doc.text("À reporter", w - 46, h - 20, { align: "right" });
         doc.text(formatMontant(v), w - 14, h - 20, { align: "right" });
       }
-      if (p >= 3 && pageLastRow[p - 1] != null) {
+      // Report du cumul de la page précédente (dès la 2e page, la 1re n'a rien à reporter).
+      if (p >= 2 && pageLastRow[p - 1] != null) {
         const v = rowCumul[pageLastRow[p - 1]] ?? 0;
+        doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
         doc.setTextColor(...DARK);
         doc.text("Report", w - 46, 24, { align: "right" });
