@@ -121,7 +121,6 @@ export function AjouterBiblioDialog({
             fournisseur: fournisseur.trim() || null,
             code_cfc: codeCfc.trim() || null,
             code_cfc_libelle: codeCfc.trim() ? cfcLibelle : null,
-            entite: entite || null,
             source: "manuel",
             statut_validation: "valide",
             actif: true,
