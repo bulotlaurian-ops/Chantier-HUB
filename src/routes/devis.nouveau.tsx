@@ -30,6 +30,7 @@ import {
   GripVertical,
   ChevronUp,
   ChevronDown,
+  Library,
 } from "lucide-react";
 import {
   DndContext,
@@ -79,6 +80,7 @@ import {
 } from "@/lib/brouillon";
 import { DevisImportPDF } from "@/components/DevisImportPDF";
 import type { DevisIAContexte } from "@/lib/devis-ia";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 export const Route = createFileRoute("/devis/nouveau")({
   component: NouveauDevis,
@@ -158,6 +160,7 @@ function NouveauDevis() {
     isEdit ? "micro" : "selection",
   );
   const [mobileImport, setMobileImport] = useState(false);
+  const [mobileBiblio, setMobileBiblio] = useState(false); // tiroir "Depuis la bibliothèque" (mobile)
   const [editUid, setEditUid] = useState<number | null>(null); // ligne en édition (mini-dialog mobile)
   const [ajoutBiblio, setAjoutBiblio] = useState<AjoutBiblioDefaults | null>(null); // ligne → ajout biblio
   const uidRef = useRef(1);
@@ -362,6 +365,15 @@ function NouveauDevis() {
   const ajouterTitreMobile = () => {
     const uid = uidRef.current;
     ajouterTitre();
+    setEditUid(uid);
+  };
+
+  // Mobile : sélection depuis la bibliothèque (même helper que le PC), puis ouverture
+  // immédiate du mini-dialog pour ajuster la quantité.
+  const choisirPrestationMobile = (p: Prestation) => {
+    const uid = uidRef.current;
+    ajouterPrestation(p);
+    setMobileBiblio(false);
     setEditUid(uid);
   };
 
@@ -768,7 +780,7 @@ function NouveauDevis() {
                   </div>
                   <PrestationPicker
                     prestations={prestations}
-                    entitePreselection={codeEntiteDevis}
+                    entitePreselection={null}
                     onChoisir={ajouterPrestation}
                   />
                 </div>
@@ -1101,12 +1113,20 @@ function NouveauDevis() {
                   onAppliquer={appliquerOpsIA}
                 />
               )}
-              <button
-                onClick={() => setMobileImport((v) => !v)}
-                className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
-              >
-                ou importer un devis
-              </button>
+              <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
+                <button
+                  onClick={() => setMobileImport((v) => !v)}
+                  className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                >
+                  ou importer un devis
+                </button>
+                <button
+                  onClick={() => setMobileBiblio(true)}
+                  className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                >
+                  ou choisir dans la bibliothèque
+                </button>
+              </div>
               {mobileImport && (
                 <div className="w-full">
                   <DevisImportPDF
@@ -1232,14 +1252,30 @@ function NouveauDevis() {
             {/* Barre d'action fixe : Ajouter une ligne (au-dessus) + Générer le devis */}
             {lignes.length > 0 && (
               <div className="fixed bottom-0 left-0 right-0 z-20 border-t bg-background p-3 space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" className="h-11" onClick={ajouterTitreMobile}>
-                    <Plus className="w-4 h-4 mr-2" />
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    variant="outline"
+                    className="h-11 px-1 text-xs"
+                    onClick={ajouterTitreMobile}
+                  >
+                    <Plus className="w-4 h-4 mr-1 shrink-0" />
                     Catégorie
                   </Button>
-                  <Button variant="outline" className="h-11" onClick={ajouterLigneMobile}>
-                    <Plus className="w-4 h-4 mr-2" />
+                  <Button
+                    variant="outline"
+                    className="h-11 px-1 text-xs"
+                    onClick={ajouterLigneMobile}
+                  >
+                    <Plus className="w-4 h-4 mr-1 shrink-0" />
                     Ligne
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-11 px-1 text-xs"
+                    onClick={() => setMobileBiblio(true)}
+                  >
+                    <Library className="w-4 h-4 mr-1 shrink-0" />
+                    Biblio
                   </Button>
                 </div>
                 <Button
@@ -1266,11 +1302,35 @@ function NouveauDevis() {
             return lg ? (
               <LigneEditDialog
                 ligne={lg}
-                onClose={() => setEditUid(null)}
+                onClose={() => {
+                  // Annuler sur une ligne encore sans libellé (jamais enregistrée) la
+                  // retire, plutôt que de laisser une ligne invalide traîner sans que ce
+                  // soit visible (le placeholder "Titre de catégorie" / "Sans libellé"
+                  // masque le vide dans la liste).
+                  if (!lg.libelle.trim()) supprimerLigne(editUid);
+                  setEditUid(null);
+                }}
                 onSave={(p) => patchLigne(editUid, p)}
               />
             ) : null;
           })()}
+
+        {/* Tiroir "Depuis la bibliothèque" — même sélecteur que le PC, quantité ajustable
+            juste après via le mini-dialog d'édition (choisirPrestationMobile). */}
+        <Sheet open={mobileBiblio} onOpenChange={setMobileBiblio}>
+          <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Depuis la bibliothèque</SheetTitle>
+            </SheetHeader>
+            <div className="mt-3">
+              <PrestationPicker
+                prestations={prestations}
+                entitePreselection={null}
+                onChoisir={choisirPrestationMobile}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
 
       {/* Ajout d'une ligne du devis à la bibliothèque (partagé desktop + mobile) */}
@@ -1383,7 +1443,15 @@ function LigneEditDialog({
         if (!o) onClose();
       }}
     >
-      <DialogContent className="max-w-md">
+      <DialogContent
+        className="max-w-md"
+        // Radix focus (et donc ouvre le clavier) le premier champ tabbable à l'ouverture,
+        // indépendamment de l'attribut autoFocus HTML posé plus bas — il faut l'empêcher
+        // explicitement ici pour une ligne qui vient déjà de la bibliothèque.
+        onOpenAutoFocus={(e) => {
+          if (ligne.prestation_id) e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>
             {ligne.est_titre ? "Modifier la catégorie" : "Modifier la ligne"}
@@ -1397,7 +1465,10 @@ function LigneEditDialog({
               onChange={(e) => setLibelle(e.target.value)}
               className="mt-1 h-11"
               placeholder={ligne.est_titre ? "Ex. Salle de bain" : "Désignation"}
-              autoFocus
+              // Pas de focus auto (et donc pas de clavier qui s'ouvre tout seul) quand la
+              // ligne vient déjà d'une prestation de la bibliothèque : le libellé est déjà
+              // rempli, seule la quantité reste probablement à ajuster.
+              autoFocus={!ligne.prestation_id}
             />
           </div>
           {!ligne.est_titre && (
