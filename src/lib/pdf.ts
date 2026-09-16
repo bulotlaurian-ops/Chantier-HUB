@@ -91,7 +91,9 @@ function formatQte(q: number): string {
   return Number.isInteger(q) ? String(q) : String(q);
 }
 
-// Dessine un logo (data URL) dans une boîte maxW×maxH, ancré en haut à gauche (x fixe).
+// Dessine un logo (data URL) dans une boîte maxW×maxH, centré dans cette boîte (x, topY
+// fixes). Retourne maxH (et non la hauteur réelle de l'image) pour que l'espace réservé
+// sous le logo reste constant quel que soit le ratio de l'image fournie.
 function drawLogo(
   doc: jsPDF,
   logo: string | undefined,
@@ -102,12 +104,17 @@ function drawLogo(
 ): number {
   if (!logo) return 0;
   try {
+    const format = logo.startsWith("data:image/jpeg") || logo.startsWith("data:image/jpg")
+      ? "JPEG"
+      : "PNG";
     const p = doc.getImageProperties(logo);
     const scale = Math.min(maxW / p.width, maxH / p.height);
     const lw = p.width * scale,
       lh = p.height * scale;
-    doc.addImage(logo, "PNG", x, topY, lw, lh);
-    return lh;
+    const dx = x + (maxW - lw) / 2;
+    const dy = topY + (maxH - lh) / 2;
+    doc.addImage(logo, format, dx, dy, lw, lh);
+    return maxH;
   } catch (e) {
     console.warn("[pdf] logo non rendu :", e);
     return 0;
@@ -208,30 +215,33 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
   const c = ENTITE_CONTACT[code];
 
   // =================== EN-TÊTE (page 1) ===================
-  const logoH = drawLogo(doc, logoDataUrl, 14, 12, 58, 26);
+  // Le logo réel (public/logos/logo-pro.png) inclut déjà le slogan et le tél/mail
+  // (letterhead scanné) : pas de doublon texte quand il est présent, seulement
+  // en repli si le logo n'a pas pu être chargé.
+  const logoH = drawLogo(doc, logoDataUrl, 14, 10, 83, 39);
 
-  let hy = 12 + logoH + (logoH > 0 ? 5 : 0);
+  let hy = 10 + logoH + (logoH > 0 ? 5 : 0);
   if (!logoDataUrl) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(15);
     doc.setTextColor(cr, cg, cb);
     doc.text(d.entite.nom, 14, hy);
     hy += 7;
-  }
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(9);
-  doc.setTextColor(...GREY);
-  if (c?.tagline) {
-    doc.text(c.tagline, 14, hy);
-    hy += 5;
-  }
-  if (c?.tel || c?.email) {
-    doc.text(
-      [c?.tel && `tél : ${c.tel}`, c?.email && `mail : ${c.email}`].filter(Boolean).join("   "),
-      14,
-      hy,
-    );
-    hy += 5;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.setTextColor(...GREY);
+    if (c?.tagline) {
+      doc.text(c.tagline, 14, hy);
+      hy += 5;
+    }
+    if (c?.tel || c?.email) {
+      doc.text(
+        [c?.tel && `tél : ${c.tel}`, c?.email && `mail : ${c.email}`].filter(Boolean).join("   "),
+        14,
+        hy,
+      );
+      hy += 5;
+    }
   }
 
   // Bloc « Devis nº… » (haut-droite)
@@ -243,38 +253,31 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
   // =================== CLIENT (gauche) / DATE + OBJET (droite) ===================
   const infoY = Math.max(hy + 8, 46);
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(...GREY);
-  doc.text("CLIENT", 14, infoY);
-  let cy = infoY + 6;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
+  // Bloc CLIENT : encadré gris clair (même esprit qu'un papier à en-tête classique),
+  // hauteur ajustée au contenu réellement présent (adresse/ville/tél/email optionnels).
+  const boxPadX = 5,
+    boxPadY = 5,
+    clientBoxW = 76,
+    clientLineH = 5;
+  const clientLines: { text: string; bold?: boolean }[] = [{ text: d.client.nom, bold: true }];
+  const adresseComplete = [d.client.adresse, d.client.ville].filter(Boolean).join(", ");
+  if (adresseComplete) clientLines.push({ text: `Adresse : ${adresseComplete}` });
+  if (d.client.telephone) clientLines.push({ text: `Tél : ${d.client.telephone}` });
+  if (d.client.email) clientLines.push({ text: `Email : ${d.client.email}` });
+  const clientBoxH = boxPadY * 2 + clientLines.length * clientLineH;
+  doc.setFillColor(235, 235, 235);
+  doc.rect(14, infoY, clientBoxW, clientBoxH, "F");
+  let cy = infoY + boxPadY + 3.6;
   doc.setTextColor(...DARK);
-  doc.text(d.client.nom, 14, cy);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
-  if (d.client.adresse) {
-    cy += 5.5;
-    doc.text(d.client.adresse, 14, cy);
-  }
-  if (d.client.ville) {
-    cy += 5.5;
-    doc.text(d.client.ville, 14, cy);
-  }
-  if (d.client.telephone || d.client.email) {
-    cy += 5.5;
-    doc.setFontSize(9);
-    doc.setTextColor(...GREY);
-    doc.text(
-      [d.client.telephone && `Tél. ${d.client.telephone}`, d.client.email]
-        .filter(Boolean)
-        .join("   ·   "),
-      14,
-      cy,
-    );
-  }
-  const clientBottom = cy + 4;
+  clientLines.forEach((l) => {
+    if (l.text) {
+      doc.setFont("helvetica", l.bold ? "bold" : "normal");
+      doc.setFontSize(l.bold ? 10.5 : 9);
+      doc.text(l.text, 14 + boxPadX, cy);
+    }
+    cy += clientLineH;
+  });
+  const clientBottom = infoY + clientBoxH + 4;
 
   // Bloc Date / Objet — encadré, à droite (même technique de rendu que l'ancien
   // tableau de référence : hauteur de ligne variable si le texte déborde).
@@ -454,6 +457,7 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
   doc.setDrawColor(...LINE);
   doc.setLineWidth(0.3);
   doc.line(labelX, y - 3, valX, y - 3);
+  y += 4;
   doc.setFontSize(11.5);
   rec("Total TTC net à payer", formatMontant(d.total_ttc), true, [cr, cg, cb]);
 

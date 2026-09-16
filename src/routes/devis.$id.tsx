@@ -60,15 +60,44 @@ const LOGOS: Record<string, string> = {
   PRO: "/logos/logo-pro.png",
 };
 
+// Repasse par un <canvas> pour ré-encoder en JPEG plutôt que de renvoyer le PNG
+// tel quel : le décodeur PNG interne de jsPDF est fragile (échoue sur des PNG
+// pourtant valides — plusieurs chunks IDAT, CRC recalculés, etc.). Décodage via
+// <img> (pas createImageBitmap, qui a refusé ce PNG pourtant valide - CRC et
+// flux zlib vérifiés octet par octet côté serveur) : la voie <img> est la plus
+// ancienne et la plus tolérante des deux. Fond blanc peint avant dessin : le
+// JPEG n'a pas de canal alpha.
 async function urlToDataUrl(url: string): Promise<string> {
-  const res = await fetch(url);
+  // cache: "no-store" — le fichier logo a été corrigé plusieurs fois côté disque
+  // pendant le développement ; on évite qu'une réponse mise en cache par le
+  // navigateur (potentiellement une ancienne version) soit réutilisée.
+  const res = await fetch(url, { cache: "no-store" });
   const blob = await res.blob();
-  return await new Promise((resolve, reject) => {
-    const fr = new FileReader();
-    fr.onload = () => resolve(fr.result as string);
-    fr.onerror = reject;
-    fr.readAsDataURL(blob);
-  });
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("Image invalide (décodage <img> échoué)"));
+      el.src = objectUrl;
+    });
+    // Redimensionne à une largeur raisonnable pour un logo imprimé (~700px, largement
+    // suffisant à l'échelle où il est utilisé) : fichier plus léger, moins de risque
+    // de heurter une limite de taille du côté de l'intégration d'image de jsPDF.
+    const targetW = Math.min(700, img.naturalWidth);
+    const targetH = Math.round((img.naturalHeight / img.naturalWidth) * targetW);
+    const canvas = document.createElement("canvas");
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas 2D non disponible");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, targetW, targetH);
+    return canvas.toDataURL("image/jpeg", 0.92);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 function DevisDetail() {
@@ -98,7 +127,12 @@ function DevisDetail() {
     try {
       const code = d.entite?.code ?? "";
       const logoUrl = LOGOS[code];
-      const logo = logoUrl ? await urlToDataUrl(logoUrl).catch(() => undefined) : undefined;
+      const logo = logoUrl
+        ? await urlToDataUrl(logoUrl).catch((e) => {
+            console.error("[pdf] logo non converti :", e);
+            return undefined;
+          })
+        : undefined;
       // Taux TVA affiché = taux effectif dérivé des totaux (jamais codé en dur, §7)
       const tauxAffiche =
         d.total_ht > 0
