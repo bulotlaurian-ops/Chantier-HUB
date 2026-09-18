@@ -26,7 +26,10 @@ const SOCIETE = {
 
 // Coordonnées SPÉCIFIQUES par entité (tél / email / accroche). Le site n'existe pas
 // dans PdfDevisData → centralisé ici (données passées inchangées).
-const ENTITE_CONTACT: Record<string, { tel: string; email: string; site: string; tagline: string }> = {
+const ENTITE_CONTACT: Record<
+  string,
+  { tel: string; email: string; site: string; tagline: string }
+> = {
   PRO: {
     tel: "06 11 30 50 13",
     email: "pascalgasc@yahoo.fr",
@@ -75,6 +78,11 @@ export interface PdfDevisData {
   taux_tva: number; // ex 8.1 (affichage)
   conditions_paiement?: string | null;
   notes?: string | null;
+  // Champs facture uniquement (undefined pour un devis → aucun effet) :
+  documentLabel?: string; // "Devis" par défaut, "Facture" pour une facture
+  dateEcheance?: string | null; // ajoute une ligne "Échéance" dans l'encart Date/Objet
+  devisReference?: string | null; // numéro du devis d'origine, ligne dédiée dans l'encart
+  mentionsFacture?: boolean; // ajoute les mentions légales pénalités de retard / 40 €
 }
 
 type RGB = [number, number, number];
@@ -104,9 +112,8 @@ function drawLogo(
 ): number {
   if (!logo) return 0;
   try {
-    const format = logo.startsWith("data:image/jpeg") || logo.startsWith("data:image/jpg")
-      ? "JPEG"
-      : "PNG";
+    const format =
+      logo.startsWith("data:image/jpeg") || logo.startsWith("data:image/jpg") ? "JPEG" : "PNG";
     const p = doc.getImageProperties(logo);
     const scale = Math.min(maxW / p.width, maxH / p.height);
     const lw = p.width * scale,
@@ -130,7 +137,9 @@ function drawFooter(doc: jsPDF, w: number, h: number, code: string): void {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...GREY);
-  const l1 = [SOCIETE.adresse, c && `T. ${c.tel}`, c?.email, c?.site].filter(Boolean).join("   ·   ");
+  const l1 = [SOCIETE.adresse, c && `T. ${c.tel}`, c?.email, c?.site]
+    .filter(Boolean)
+    .join("   ·   ");
   const l2 = `${SOCIETE.formeJuridique}   ·   SIRET ${SOCIETE.siret}`;
   doc.text(l1, w / 2, h - 11, { align: "center" });
   doc.text(l2, w / 2, h - 7, { align: "center" });
@@ -213,6 +222,7 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
   const [cr, cg, cb] = hexToRgb(d.entite.couleur);
   const code = d.entite.code;
   const c = ENTITE_CONTACT[code];
+  const label = d.documentLabel ?? "Devis";
 
   // =================== EN-TÊTE (page 1) ===================
   // Le logo réel (public/logos/logo-pro.png) inclut déjà le slogan et le tél/mail
@@ -248,7 +258,7 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(19);
   doc.setTextColor(cr, cg, cb);
-  doc.text(`Devis ${d.numero}`, w - 14, 22, { align: "right" });
+  doc.text(`${label} ${d.numero}`, w - 14, 22, { align: "right" });
 
   // =================== CLIENT (gauche) / DATE + OBJET (droite) ===================
   const infoY = Math.max(hy + 8, 46);
@@ -283,6 +293,8 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
   // tableau de référence : hauteur de ligne variable si le texte déborde).
   const boxX = 128;
   const refRows: [string, string][] = [["Date", formatDateLong(d.date_creation)]];
+  if (d.dateEcheance) refRows.push(["Échéance", formatDateLong(d.dateEcheance)]);
+  if (d.devisReference) refRows.push(["Devis d'origine", d.devisReference]);
   if (d.objet?.trim()) refRows.push(["Objet", d.objet.trim()]);
   const rowH = 7;
   doc.setDrawColor(...LINE);
@@ -521,6 +533,26 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
   ) as string[];
   doc.text(mention, visaX + 3, bx + 12);
 
+  // Mentions légales obligatoires sur une facture française (art. L441-10 du Code de
+  // commerce) — n'ont pas lieu d'être sur un devis, donc conditionnées à mentionsFacture.
+  if (d.mentionsFacture) {
+    let my = bx + boxH3 + 10;
+    if (my > h - 30) {
+      doc.addPage();
+      my = 30;
+    }
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...GREY);
+    const mentionsLegales = doc.splitTextToSize(
+      "En cas de retard de paiement, une pénalité égale à trois fois le taux d'intérêt " +
+        "légal sera exigible, ainsi qu'une indemnité forfaitaire pour frais de " +
+        "recouvrement de 40 €, conformément à l'article L441-10 du Code de commerce.",
+      w - 28,
+    ) as string[];
+    doc.text(mentionsLegales, 14, my);
+  }
+
   // =================== CGV EN FIN DE DOCUMENT (par entité) ===================
   const contentPages = doc.getNumberOfPages(); // dernière page de contenu (avant CGV)
   renderCgv(doc, CGV_PAR_CODE[code], w, h, [cr, cg, cb]);
@@ -547,7 +579,7 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(...GREY);
-      doc.text(`Devis Nº ${d.numero} — ${dateStr}`, 14, 17.5);
+      doc.text(`${label} Nº ${d.numero} — ${dateStr}`, 14, 17.5);
     }
     if (p <= contentPages) {
       // À reporter en bas de page si le tableau continue sur la page suivante
@@ -577,4 +609,21 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
 
 export function telechargerDevisPdf(d: PdfDevisData, logoDataUrl?: string): void {
   buildDevisPdf(d, logoDataUrl).save(`Devis ${d.numero}.pdf`);
+}
+
+// Une facture réutilise entièrement le gabarit devis (même en-tête, même tableau, même
+// pied de page) : le type le confirme (PdfFactureData = PdfDevisData avec les 2 champs
+// facture-only rendus obligatoires), documentLabel/mentionsFacture sont forcés ici plutôt
+// que laissés à la charge de l'appelant.
+export type PdfFactureData = PdfDevisData & {
+  dateEcheance: string;
+  devisReference: string;
+};
+
+export function buildFacturePdf(f: PdfFactureData, logoDataUrl?: string): jsPDF {
+  return buildDevisPdf({ ...f, documentLabel: "Facture", mentionsFacture: true }, logoDataUrl);
+}
+
+export function telechargerFacturePdf(f: PdfFactureData, logoDataUrl?: string): void {
+  buildFacturePdf(f, logoDataUrl).save(`Facture ${f.numero}.pdf`);
 }
