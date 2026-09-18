@@ -89,7 +89,7 @@ export type StatutFactureAffiche = StatutFactureDB | "en_retard";
 
 // "En retard" n'est jamais stocké en base : calculé ici à partir de l'échéance, pour
 // ne jamais avoir à resynchroniser un 3e statut manuel (cf. spec facturation client).
-export function statutFactureAffiche(f: {
+function statutFactureAffiche(f: {
   statut: StatutFactureDB;
   date_echeance: string;
 }): StatutFactureAffiche {
