@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import type { Tables } from "@/lib/database.types";
+import type { Tables, TablesInsert } from "@/lib/database.types";
+import type { DevisDetail } from "@/lib/queries/devis";
+import { todayIso } from "@/lib/devis-utils";
+import { addDays } from "@/lib/format";
 
 export type FactureRow = Tables<"factures_fournisseurs">;
 export type RepartitionRow = Tables<"factures_repartition">;
@@ -378,4 +381,151 @@ export async function ocrFacture(
     throw new Error(body?.erreur ?? `http_${resp.status}`);
   }
   return (body.extracted ?? {}) as OcrExtraction;
+}
+
+// =====================================================================
+// CLIENT INVOICES (factures) — v1
+// =====================================================================
+
+export type FactureRowClient = Tables<"factures">;
+export type LigneFactureRow = Tables<"lignes_facture">;
+
+export type FactureEnrichieClient = FactureRowClient & {
+  client: { id: string; nom: string } | null;
+  entite: { id: string; nom: string; couleur: string | null; code: string } | null;
+};
+
+export type FactureDetail = FactureRowClient & {
+  client: Tables<"clients"> | null;
+  entite: Tables<"entites"> | null;
+  devis: { numero: string } | null;
+  lignes: LigneFactureRow[];
+};
+
+const KEY_CLIENT = ["factures_client"] as const;
+const LIST_SELECT = "*, client:clients(id, nom), entite:entites(id, nom, couleur, code)";
+const DETAIL_SELECT =
+  "*, client:clients(*), entite:entites(*), devis:devis(numero), lignes:lignes_facture(*)";
+
+// Délai par défaut : 30 jours (délai légal par défaut entre professionnels en France
+// en l'absence d'accord explicite — conditions_paiement du devis est un texte libre,
+// pas un nombre de jours exploitable automatiquement, cf. spec).
+const DELAI_ECHEANCE_JOURS = 30;
+
+export function useFacturesList() {
+  return useQuery({
+    queryKey: [...KEY_CLIENT, "list"],
+    queryFn: async (): Promise<FactureEnrichieClient[]> => {
+      const { data, error } = await supabase
+        .from("factures")
+        .select(LIST_SELECT)
+        .order("date_emission", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as FactureEnrichieClient[];
+    },
+  });
+}
+
+// Existe-t-il déjà une facture pour ce devis ? (une facture = un devis, cf. spec —
+// sert à masquer le bouton "Facturer" sur la fiche devis si c'est déjà fait.)
+export function useFactureParDevis(devisId: string | undefined) {
+  return useQuery({
+    queryKey: [...KEY_CLIENT, "par-devis", devisId],
+    queryFn: async (): Promise<FactureRowClient | null> => {
+      const { data, error } = await supabase
+        .from("factures")
+        .select("*")
+        .eq("devis_id", devisId as string)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!devisId,
+  });
+}
+
+// Fetch imprératif (pas un hook) : utilisé juste avant de générer le PDF depuis la
+// liste, où on n'a pas déjà les lignes en mémoire comme sur la fiche devis.
+export async function fetchFactureDetail(id: string): Promise<FactureDetail> {
+  const { data, error } = await supabase
+    .from("factures")
+    .select(DETAIL_SELECT)
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  const f = data as FactureDetail;
+  f.lignes = [...(f.lignes ?? [])].sort((a, b) => a.ordre - b.ordre);
+  return f;
+}
+
+// Crée la facture (+ copie figée des lignes) depuis un devis accepté. Le devis n'est
+// jamais modifié par cette opération.
+export function useCreateFactureClient() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (src: DevisDetail): Promise<FactureRowClient> => {
+      const { data: numero, error: e0 } = await supabase.rpc("generer_numero_facture");
+      if (e0) throw e0;
+      const insert: TablesInsert<"factures"> = {
+        numero: numero as string,
+        devis_id: src.id,
+        entite_id: src.entite_id,
+        client_id: src.client_id,
+        date_echeance: addDays(todayIso(), DELAI_ECHEANCE_JOURS),
+        total_ht: src.total_ht,
+        total_tva: src.total_tva,
+        total_ttc: src.total_ttc,
+        arrondi: src.arrondi,
+      };
+      const { data: f, error } = await supabase.from("factures").insert(insert).select().single();
+      if (error) throw error;
+      if (src.lignes.length) {
+        const rows = src.lignes.map((l, i) => ({
+          facture_id: f.id,
+          ordre: i,
+          libelle: l.libelle,
+          unite: l.unite,
+          quantite: l.quantite,
+          prix_unitaire_ht: l.prix_unitaire_ht,
+          remise_pct: l.remise_pct,
+          taux_tva: l.taux_tva,
+          total_ht: l.total_ht,
+          est_option: l.est_option,
+          est_titre: l.est_titre,
+        }));
+        const { error: e2 } = await supabase.from("lignes_facture").insert(rows);
+        if (e2) throw e2;
+      }
+      return f;
+    },
+    onSuccess: (_f, src) => {
+      qc.invalidateQueries({ queryKey: KEY_CLIENT });
+      qc.invalidateQueries({ queryKey: [...KEY_CLIENT, "par-devis", src.id] });
+    },
+  });
+}
+
+export function useUpdateFactureStatut() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, statut }: { id: string; statut: FactureRowClient["statut"] }) => {
+      const { error } = await supabase
+        .from("factures")
+        .update({ statut, date_paiement: statut === "payee" ? todayIso() : null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY_CLIENT }),
+  });
+}
+
+export function useUpdateFactureEcheance() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, date_echeance }: { id: string; date_echeance: string }) => {
+      const { error } = await supabase.from("factures").update({ date_echeance }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY_CLIENT }),
+  });
 }

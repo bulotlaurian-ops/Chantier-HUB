@@ -408,6 +408,82 @@ export type Database = {
         };
         Relationships: [];
       };
+      factures: {
+        Row: {
+          arrondi: number;
+          client_id: string;
+          created_at: string;
+          created_by: string | null;
+          date_echeance: string;
+          date_emission: string;
+          date_paiement: string | null;
+          devis_id: string;
+          entite_id: string;
+          id: string;
+          numero: string;
+          statut: Database["public"]["Enums"]["statut_facture_client"];
+          total_ht: number;
+          total_ttc: number;
+          total_tva: number;
+        };
+        Insert: {
+          arrondi?: number;
+          client_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          date_echeance: string;
+          date_emission?: string;
+          date_paiement?: string | null;
+          devis_id: string;
+          entite_id: string;
+          id?: string;
+          numero: string;
+          statut?: Database["public"]["Enums"]["statut_facture_client"];
+          total_ht: number;
+          total_ttc: number;
+          total_tva: number;
+        };
+        Update: {
+          arrondi?: number;
+          client_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          date_echeance?: string;
+          date_emission?: string;
+          date_paiement?: string | null;
+          devis_id?: string;
+          entite_id?: string;
+          id?: string;
+          numero?: string;
+          statut?: Database["public"]["Enums"]["statut_facture_client"];
+          total_ht?: number;
+          total_ttc?: number;
+          total_tva?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "factures_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "factures_devis_id_fkey";
+            columns: ["devis_id"];
+            isOneToOne: true;
+            referencedRelation: "devis";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "factures_entite_id_fkey";
+            columns: ["entite_id"];
+            isOneToOne: false;
+            referencedRelation: "entites";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       factures_fournisseurs: {
         Row: {
           cree_par: string | null;
@@ -503,6 +579,59 @@ export type Database = {
             columns: ["facture_id"];
             isOneToOne: false;
             referencedRelation: "factures_fournisseurs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      lignes_facture: {
+        Row: {
+          est_option: boolean;
+          est_titre: boolean;
+          facture_id: string;
+          id: string;
+          libelle: string;
+          ordre: number;
+          prix_unitaire_ht: number;
+          quantite: number;
+          remise_pct: number;
+          taux_tva: number;
+          total_ht: number;
+          unite: string | null;
+        };
+        Insert: {
+          est_option?: boolean;
+          est_titre?: boolean;
+          facture_id: string;
+          id?: string;
+          libelle: string;
+          ordre?: number;
+          prix_unitaire_ht: number;
+          quantite: number;
+          remise_pct?: number;
+          taux_tva: number;
+          total_ht: number;
+          unite?: string | null;
+        };
+        Update: {
+          est_option?: boolean;
+          est_titre?: boolean;
+          facture_id?: string;
+          id?: string;
+          libelle?: string;
+          ordre?: number;
+          prix_unitaire_ht?: number;
+          quantite?: number;
+          remise_pct?: number;
+          taux_tva?: number;
+          total_ht?: number;
+          unite?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "lignes_facture_facture_id_fkey";
+            columns: ["facture_id"];
+            isOneToOne: false;
+            referencedRelation: "factures";
             referencedColumns: ["id"];
           },
         ];
@@ -1114,6 +1243,7 @@ export type Database = {
         Returns: boolean;
       };
       generer_numero_devis: { Args: never; Returns: string };
+      generer_numero_facture: { Args: never; Returns: string };
       generer_reference_chantier: {
         Args: { p_client: string; p_ville: string };
         Returns: string;
@@ -1131,6 +1261,7 @@ export type Database = {
       statut_chantier: "prospect" | "actif" | "cloture";
       statut_devis: "brouillon" | "envoye" | "accepte" | "refuse" | "expire";
       statut_facture: "a_valider" | "valide";
+      statut_facture_client: "emise" | "payee";
       statut_validation: "pending" | "valide" | "rejete";
       type_tva: "standard" | "reduit" | "hebergement" | "exonere";
       unite: "m2" | "ml" | "pce" | "u" | "fft" | "h" | "forfait";
@@ -1266,6 +1397,7 @@ export const Constants = {
       statut_chantier: ["prospect", "actif", "cloture"],
       statut_devis: ["brouillon", "envoye", "accepte", "refuse", "expire"],
       statut_facture: ["a_valider", "valide"],
+      statut_facture_client: ["emise", "payee"],
       statut_validation: ["pending", "valide", "rejete"],
       type_tva: ["standard", "reduit", "hebergement", "exonere"],
       unite: ["m2", "ml", "pce", "u", "fft", "h", "forfait"],
