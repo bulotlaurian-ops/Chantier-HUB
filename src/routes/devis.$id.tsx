@@ -29,7 +29,8 @@ import {
   type DevisDetail,
 } from "@/lib/queries/devis";
 import { useConditionsPaiement } from "@/lib/queries/conditions";
-import { telechargerDevisPdf } from "@/lib/pdf";
+import { telechargerDevisPdf, telechargerFacturePdf, type PdfFactureData } from "@/lib/pdf";
+import { useCreateFactureClient, useFactureParDevis } from "@/lib/queries/factures";
 import {
   ArrowLeft,
   Loader2,
@@ -40,6 +41,7 @@ import {
   Pencil,
   Copy,
   Layers,
+  Receipt,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -111,6 +113,8 @@ function DevisDetail() {
   const { data: versions = [] } = useVersionsDevis(d?.numero);
   const nav = useNavigate();
   const [pdfLoading, setPdfLoading] = useState(false);
+  const facturer = useCreateFactureClient();
+  const { data: factureExistante } = useFactureParDevis(d?.id);
 
   if (isLoading)
     return (
@@ -122,50 +126,60 @@ function DevisDetail() {
 
   const archived = !!d.archive_at;
 
+  // Mapping DevisDetail → champs communs devis/facture (numéro, date, échéance,
+  // référence devis d'origine EXCLUS : propres à chaque appelant). Partagé par
+  // genererPdf et facturerDevis pour ne pas dupliquer la résolution du logo.
+  const donneesPdfCommunes = async () => {
+    const code = d.entite?.code ?? "";
+    const logoUrl = LOGOS[code];
+    const logo = logoUrl
+      ? await urlToDataUrl(logoUrl).catch((e) => {
+          console.error("[pdf] logo non converti :", e);
+          return undefined;
+        })
+      : undefined;
+    const tauxAffiche =
+      d.total_ht > 0
+        ? Math.round((d.total_tva / d.total_ht) * 1000) / 10
+        : (d.lignes[0]?.taux_tva ?? 20);
+    return {
+      logo,
+      entite: { nom: d.entite?.nom ?? "", code, couleur: d.entite?.couleur ?? "#1F2937" },
+      client: {
+        nom: d.client?.nom ?? "",
+        adresse: d.client?.adresse,
+        ville: d.client?.ville,
+        telephone: d.client?.telephone,
+        email: d.client?.email,
+      },
+      lignes: d.lignes.map((l) => ({
+        libelle: l.libelle,
+        unite: l.unite,
+        quantite: l.quantite,
+        prix_unitaire_ht: l.prix_unitaire_ht,
+        remise_pct: l.remise_pct,
+        total_ht: l.total_ht,
+        est_titre: l.est_titre,
+        est_option: l.est_option,
+      })),
+      total_ht: d.total_ht,
+      total_tva: d.total_tva,
+      total_ttc: d.total_ttc,
+      arrondi: d.arrondi,
+      taux_tva: tauxAffiche,
+    };
+  };
+
   const genererPdf = async () => {
     setPdfLoading(true);
     try {
-      const code = d.entite?.code ?? "";
-      const logoUrl = LOGOS[code];
-      const logo = logoUrl
-        ? await urlToDataUrl(logoUrl).catch((e) => {
-            console.error("[pdf] logo non converti :", e);
-            return undefined;
-          })
-        : undefined;
-      // Taux TVA affiché = taux effectif dérivé des totaux (jamais codé en dur, §7)
-      const tauxAffiche =
-        d.total_ht > 0
-          ? Math.round((d.total_tva / d.total_ht) * 1000) / 10
-          : (d.lignes[0]?.taux_tva ?? 20);
+      const { logo, ...commun } = await donneesPdfCommunes();
       telechargerDevisPdf(
         {
+          ...commun,
           numero: d.numero,
           date_creation: d.date_creation,
           objet: d.objet,
-          entite: { nom: d.entite?.nom ?? "", code, couleur: d.entite?.couleur ?? "#1F2937" },
-          client: {
-            nom: d.client?.nom ?? "",
-            adresse: d.client?.adresse,
-            ville: d.client?.ville,
-            telephone: d.client?.telephone,
-            email: d.client?.email,
-          },
-          lignes: d.lignes.map((l) => ({
-            libelle: l.libelle,
-            unite: l.unite,
-            quantite: l.quantite,
-            prix_unitaire_ht: l.prix_unitaire_ht,
-            remise_pct: l.remise_pct,
-            total_ht: l.total_ht,
-            est_titre: l.est_titre,
-            est_option: l.est_option,
-          })),
-          total_ht: d.total_ht,
-          total_tva: d.total_tva,
-          total_ttc: d.total_ttc,
-          arrondi: d.arrondi,
-          taux_tva: tauxAffiche,
           conditions_paiement: d.conditions_paiement,
           notes: d.notes,
         },
@@ -173,6 +187,30 @@ function DevisDetail() {
       );
     } catch (e) {
       toast.error("Génération PDF impossible : " + (e as Error).message);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const facturerDevis = async () => {
+    setPdfLoading(true);
+    try {
+      const f = await facturer.mutateAsync(d);
+      const { logo, ...commun } = await donneesPdfCommunes();
+      const data: PdfFactureData = {
+        ...commun,
+        numero: f.numero,
+        date_creation: f.date_emission,
+        objet: d.objet,
+        conditions_paiement: d.conditions_paiement,
+        notes: d.notes,
+        dateEcheance: f.date_echeance,
+        devisReference: d.numero,
+      };
+      telechargerFacturePdf(data, logo);
+      toast.success(`Facture ${f.numero} créée`);
+    } catch (e) {
+      toast.error("Facturation impossible : " + (e as Error).message);
     } finally {
       setPdfLoading(false);
     }
@@ -227,6 +265,28 @@ function DevisDetail() {
               )}
               Télécharger le PDF
             </Button>
+            {!archived && d.statut === "accepte" && !factureExistante && (
+              <Button
+                variant="outline"
+                onClick={facturerDevis}
+                disabled={pdfLoading || facturer.isPending}
+              >
+                {facturer.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <Receipt className="w-4 h-4 mr-1" />
+                )}
+                Facturer
+              </Button>
+            )}
+            {factureExistante && (
+              <Link
+                to="/factures"
+                className="text-xs text-muted-foreground hover:text-foreground hover:underline self-center"
+              >
+                Facture {factureExistante.numero} déjà émise
+              </Link>
+            )}
             {!archived && d.statut === "brouillon" && (
               <Link to="/devis/nouveau" search={{ edit: d.id }}>
                 <Button variant="outline">
