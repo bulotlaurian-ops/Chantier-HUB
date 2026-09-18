@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/lib/database.types";
+import { todayIso } from "@/lib/devis-utils";
 import { useTheme } from "@/lib/theme";
 import { couleurLisible } from "@/lib/couleur";
 
@@ -79,6 +80,48 @@ export function EntiteChip({
       style={{ backgroundColor: `${couleur}1f`, color: couleur, borderColor: `${couleur}66` }}
     >
       {entite.nom}
+    </span>
+  );
+}
+
+type StatutFactureDB = Tables<"factures">["statut"];
+export type StatutFactureAffiche = StatutFactureDB | "en_retard";
+
+// "En retard" n'est jamais stocké en base : calculé ici à partir de l'échéance, pour
+// ne jamais avoir à resynchroniser un 3e statut manuel (cf. spec facturation client).
+export function statutFactureAffiche(f: {
+  statut: StatutFactureDB;
+  date_echeance: string;
+}): StatutFactureAffiche {
+  if (f.statut === "payee") return "payee";
+  return f.date_echeance < todayIso() ? "en_retard" : "emise";
+}
+
+const STATUT_FACTURE_LABELS: Record<StatutFactureAffiche, { label: string; cls: string }> = {
+  emise: { label: "Émise", cls: "bg-info/10 text-info border-info/30" },
+  payee: { label: "Payée", cls: "bg-success/10 text-success border-success/40" },
+  en_retard: {
+    label: "En retard",
+    cls: "bg-destructive/10 text-destructive border-destructive/30",
+  },
+};
+
+export function StatutFactureChip({
+  statut,
+  date_echeance,
+}: {
+  statut: StatutFactureDB;
+  date_echeance: string;
+}) {
+  const c = STATUT_FACTURE_LABELS[statutFactureAffiche({ statut, date_echeance })];
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border",
+        c.cls,
+      )}
+    >
+      {c.label}
     </span>
   );
 }
