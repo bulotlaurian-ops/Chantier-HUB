@@ -198,6 +198,21 @@ export type Database = {
         };
         Relationships: [];
       };
+      compteurs_factures: {
+        Row: {
+          dernier: number;
+          prefixe: string;
+        };
+        Insert: {
+          dernier?: number;
+          prefixe: string;
+        };
+        Update: {
+          dernier?: number;
+          prefixe?: string;
+        };
+        Relationships: [];
+      };
       conditions_paiement: {
         Row: {
           entite_id: string;
@@ -466,6 +481,13 @@ export type Database = {
             columns: ["client_id"];
             isOneToOne: false;
             referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "factures_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
           {
