@@ -8,6 +8,7 @@ import {
   Clock,
   Users,
   Receipt,
+  FileCheck2,
   LogOut,
   BookOpen,
 } from "lucide-react";
@@ -36,7 +37,8 @@ const ADMIN_ITEMS = [
   { to: "/chantiers", label: "Chantiers", icon: Hammer },
   { to: "/clients", label: "Clients", icon: Users },
   { to: "/heures", label: "Suivi des heures", icon: Clock },
-  { to: "/factures-fournisseurs", label: "Factures fourn.", icon: Receipt },
+  { to: "/factures", label: "Facture", icon: FileCheck2 },
+  { to: "/factures-fournisseurs", label: "Suivi facturation", icon: Receipt },
   { to: "/bibliotheque", label: "Bibliothèque", icon: Library },
   { to: "/parametres", label: "Paramètres", icon: Settings },
 ];

@@ -10,7 +10,8 @@ const TITRES: { prefix: string; label: string }[] = [
   { prefix: "/chantiers", label: "Chantiers" },
   { prefix: "/clients", label: "Clients" },
   { prefix: "/heures", label: "Heures" },
-  { prefix: "/factures-fournisseurs", label: "Factures" },
+  { prefix: "/factures", label: "Facture" },
+  { prefix: "/factures-fournisseurs", label: "Suivi facturation" },
   { prefix: "/bibliotheque", label: "Bibliothèque" },
   { prefix: "/parametres", label: "Paramètres" },
 ];
