@@ -44,6 +44,15 @@ de recouvrement de 40 € (art. L441-10 du Code de commerce). Ce n'est pas une o
 design, c'est une obligation légale à intégrer dans le gabarit PDF de la facture — un
 point distinct des mentions déjà présentes sur le devis (CGV, SIRET).
 
+## Correction apportée pendant la planification
+
+`conditions_paiement` (sur `devis` comme sur la table du même nom) est un texte libre
+(ex. "50% acompte / 30% livraison / solde réception"), pas un nombre de jours — il ne
+permet pas de calculer une échéance automatiquement, contrairement à ce que cette spec
+supposait initialement. Décision (validée avec Laurian) : `date_echeance` = date
+d'émission + 30 jours par défaut (délai légal par défaut entre professionnels en France
+en l'absence d'accord explicite), modifiable ensuite sur la facture au cas par cas.
+
 ## Modèle de données
 
 Deux nouvelles tables, sur le modèle de `devis` / `lignes_devis` déjà en place
@@ -57,14 +66,13 @@ factures
   entite_id           uuid not null references entites(id)   -- copié du devis à l'émission
   client_id           uuid not null references clients(id)   -- copié du devis à l'émission
   date_emission       date not null default current_date
-  date_echeance       date                          -- calculée depuis les conditions de paiement du devis
+  date_echeance       date not null                 -- date_emission + 30 j par défaut, modifiable
   statut              statut_facture_client not null default 'emise'  -- enum : 'emise' | 'payee'
   date_paiement       date                          -- renseignée au passage à 'payee'
   total_ht            numeric(14,2) not null
   total_tva           numeric(14,2) not null
   total_ttc           numeric(14,2) not null
   arrondi             numeric(6,2) not null default 0
-  taux_tva_affiche    numeric(5,2)                  -- même dérivation que le PDF devis
   created_by          uuid references profiles(id)
   created_at          timestamptz not null default now()
 
@@ -124,6 +132,12 @@ rectificative) n'est **pas construit ici** — si Laurian génère une facture p
 v1, il n'y a pas de bouton pour l'annuler proprement. Assumé comme limite connue de la v1
 plutôt que du scope caché.
 
+Appliqué au niveau base, pas seulement par absence de bouton dans l'interface : `factures`
+et `lignes_facture` n'ont volontairement **aucune policy RLS pour DELETE** (seulement
+select/insert/update). Sans policy pour une commande donnée, RLS la refuse par défaut,
+donc même un accès direct à l'API (hors interface) ne peut pas supprimer une facture
+émise, y compris pour un admin.
+
 ## Écrans
 
 - **Sidebar / navigation** (`AppSidebar.tsx`) : renommer le libellé de l'item
@@ -131,7 +145,8 @@ plutôt que du scope caché.
   `/factures` "Facture" (nouvelle icône, ex. `Receipt` déjà utilisé ailleurs ou une autre
   de `lucide-react` à choisir à l'implémentation).
 - **`/factures` (liste)** : tableau numéro / client / montant TTC / statut (badge
-  émise / payée / en retard) / échéance, avec action pour basculer payée ↔ émise et
+  émise / payée / en retard) / échéance (éditable à la volée — champ date cliquable dans
+  la ligne, cf. correction ci-dessus), avec action pour basculer payée ↔ émise et
   télécharger le PDF. Modelé sur l'écran `/factures-fournisseurs` existant pour la
   cohérence visuelle.
 - **Fiche devis (`devis.$id.tsx`)** : bouton "Facturer" à côté des actions existantes,
