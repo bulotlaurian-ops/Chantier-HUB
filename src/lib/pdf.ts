@@ -302,11 +302,17 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   const valLineH = doc.getTextDimensions("A").h;
+  // Largeur de la colonne libellé calculée sur le texte le plus long (ex. "DEVIS
+  // D'ORIGINE" déborde sur la valeur avec une largeur fixe de 20mm prévue pour "DATE").
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  const labelColW = Math.max(...refRows.map((r) => doc.getTextWidth(r[0].toUpperCase()))) + 4;
+  const refValX = boxX + labelColW;
   let ry = infoY;
   refRows.forEach((r) => {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    const val = doc.splitTextToSize(r[1], w - 14 - (boxX + 20)) as string[];
+    const val = doc.splitTextToSize(r[1], w - 14 - refValX) as string[];
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
     doc.setTextColor(...GREY);
@@ -314,7 +320,7 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.setTextColor(...DARK);
-    doc.text(val, boxX + 20, ry);
+    doc.text(val, refValX, ry);
     const blockH = rowH + (val.length - 1) * valLineH;
     doc.line(boxX, ry + blockH - 4.5, w - 14, ry + blockH - 4.5);
     ry += blockH;

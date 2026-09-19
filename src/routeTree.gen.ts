@@ -13,6 +13,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ParametresIndexRouteImport } from './routes/parametres.index'
 import { Route as HeuresIndexRouteImport } from './routes/heures.index'
+import { Route as FacturesIndexRouteImport } from './routes/factures.index'
 import { Route as FacturesFournisseursIndexRouteImport } from './routes/factures-fournisseurs.index'
 import { Route as DevisIndexRouteImport } from './routes/devis.index'
 import { Route as ClientsIndexRouteImport } from './routes/clients.index'
@@ -41,6 +42,11 @@ const ParametresIndexRoute = ParametresIndexRouteImport.update({
 const HeuresIndexRoute = HeuresIndexRouteImport.update({
   id: '/heures/',
   path: '/heures/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FacturesIndexRoute = FacturesIndexRouteImport.update({
+  id: '/factures/',
+  path: '/factures/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FacturesFournisseursIndexRoute =
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/clients/': typeof ClientsIndexRoute
   '/devis/': typeof DevisIndexRoute
   '/factures-fournisseurs/': typeof FacturesFournisseursIndexRoute
+  '/factures/': typeof FacturesIndexRoute
   '/heures/': typeof HeuresIndexRoute
   '/parametres/': typeof ParametresIndexRoute
 }
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/clients': typeof ClientsIndexRoute
   '/devis': typeof DevisIndexRoute
   '/factures-fournisseurs': typeof FacturesFournisseursIndexRoute
+  '/factures': typeof FacturesIndexRoute
   '/heures': typeof HeuresIndexRoute
   '/parametres': typeof ParametresIndexRoute
 }
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/clients/': typeof ClientsIndexRoute
   '/devis/': typeof DevisIndexRoute
   '/factures-fournisseurs/': typeof FacturesFournisseursIndexRoute
+  '/factures/': typeof FacturesIndexRoute
   '/heures/': typeof HeuresIndexRoute
   '/parametres/': typeof ParametresIndexRoute
 }
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/clients/'
     | '/devis/'
     | '/factures-fournisseurs/'
+    | '/factures/'
     | '/heures/'
     | '/parametres/'
   fileRoutesByTo: FileRoutesByTo
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/clients'
     | '/devis'
     | '/factures-fournisseurs'
+    | '/factures'
     | '/heures'
     | '/parametres'
   id:
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/clients/'
     | '/devis/'
     | '/factures-fournisseurs/'
+    | '/factures/'
     | '/heures/'
     | '/parametres/'
   fileRoutesById: FileRoutesById
@@ -196,6 +208,7 @@ export interface RootRouteChildren {
   ClientsIndexRoute: typeof ClientsIndexRoute
   DevisIndexRoute: typeof DevisIndexRoute
   FacturesFournisseursIndexRoute: typeof FacturesFournisseursIndexRoute
+  FacturesIndexRoute: typeof FacturesIndexRoute
   HeuresIndexRoute: typeof HeuresIndexRoute
   ParametresIndexRoute: typeof ParametresIndexRoute
 }
@@ -228,6 +241,13 @@ declare module '@tanstack/react-router' {
       path: '/heures'
       fullPath: '/heures/'
       preLoaderRoute: typeof HeuresIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/factures/': {
+      id: '/factures/'
+      path: '/factures'
+      fullPath: '/factures/'
+      preLoaderRoute: typeof FacturesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/factures-fournisseurs/': {
@@ -308,6 +328,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClientsIndexRoute: ClientsIndexRoute,
   DevisIndexRoute: DevisIndexRoute,
   FacturesFournisseursIndexRoute: FacturesFournisseursIndexRoute,
+  FacturesIndexRoute: FacturesIndexRoute,
   HeuresIndexRoute: HeuresIndexRoute,
   ParametresIndexRoute: ParametresIndexRoute,
 }

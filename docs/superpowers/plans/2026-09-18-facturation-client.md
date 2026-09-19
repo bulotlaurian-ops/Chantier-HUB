@@ -841,8 +841,9 @@ git commit -m "feat: generation PDF facture (reutilise le gabarit devis)"
 - Modify: `src/components/ChantierBadges.tsx`
 
 **Interfaces:**
-- Consumes : `todayIso` (`@/lib/devis-utils`), `FactureRow["statut"]`
-  (`"emise" | "payee"`, cf. Task 2).
+- Consumes : `todayIso` (`@/lib/devis-utils`), `Tables<"factures">["statut"]`
+  (`"emise" | "payee"`, cf. Task 2 — obtenu directement via `Tables`, pas via un export de
+  `factures.ts`).
 - Produces : `StatutFactureAffiche` (type), `statutFactureAffiche(f)`,
   `StatutFactureChip`.
 
@@ -932,7 +933,11 @@ git commit -m "feat: badge de statut pour les factures client"
 
 **Interfaces:**
 - Consumes : `useFacturesList`, `useUpdateFactureStatut`, `useUpdateFactureEcheance`,
-  `fetchFactureDetail`, `FactureEnrichie` (Task 2) ; `StatutFactureChip` (Task 4) ;
+  `fetchFactureDetail`, `FactureEnrichieClient` (Task 2 — nommé avec le suffixe `Client`
+  car `src/lib/queries/factures.ts` existait déjà pour les factures **fournisseurs** et
+  exportait déjà `FactureRow`/`FactureEnrichie`/`useCreateFacture` ; ce n'était pas un
+  nouveau fichier comme le disait ce plan à tort — cf. ruling dans le ledger SDD) ;
+  `StatutFactureChip` (Task 4) ;
   `telechargerFacturePdf`, `PdfFactureData` (Task 3) ; `EntiteChip`
   (`@/components/ChantierBadges`, déjà existant) ; `useEntiteFilter`
   (`@/lib/entite-filter`) ; `useEntites` (`@/lib/queries/entites`) ; `PageHeader`
@@ -964,7 +969,7 @@ import {
   useUpdateFactureStatut,
   useUpdateFactureEcheance,
   fetchFactureDetail,
-  type FactureEnrichie,
+  type FactureEnrichieClient,
 } from "@/lib/queries/factures";
 import { telechargerFacturePdf, type PdfFactureData } from "@/lib/pdf";
 
@@ -1028,7 +1033,7 @@ function FacturesListe() {
       });
   }, [facturesData, selectedCode, q]);
 
-  const telecharger = async (f: FactureEnrichie) => {
+  const telecharger = async (f: FactureEnrichieClient) => {
     setPdfLoadingId(f.id);
     try {
       const detail = await fetchFactureDetail(f.id);
@@ -1088,7 +1093,7 @@ function FacturesListe() {
     }
   };
 
-  const basculerPayee = (f: FactureEnrichie) => {
+  const basculerPayee = (f: FactureEnrichieClient) => {
     const next = f.statut === "payee" ? "emise" : "payee";
     updateStatut.mutate(
       { id: f.id, statut: next },
@@ -1102,7 +1107,7 @@ function FacturesListe() {
   // Échéance éditable directement dans la liste (cf. spec : 30 jours par défaut à la
   // création, mais modifiable au cas par cas puisque conditions_paiement est un texte
   // libre non exploitable automatiquement).
-  const changerEcheance = (f: FactureEnrichie, dateEcheance: string) => {
+  const changerEcheance = (f: FactureEnrichieClient, dateEcheance: string) => {
     if (!dateEcheance || dateEcheance === f.date_echeance) return;
     updateEcheance.mutate(
       { id: f.id, date_echeance: dateEcheance },
@@ -1432,7 +1437,9 @@ git commit -m "feat: renomme factures fournisseurs et ajoute l'onglet Facture"
 - Modify: `src/routes/devis.$id.tsx`
 
 **Interfaces:**
-- Consumes : `useCreateFacture`, `useFactureParDevis` (Task 2) ; `telechargerFacturePdf`,
+- Consumes : `useCreateFactureClient`, `useFactureParDevis` (Task 2 — `useCreateFacture`
+  a le suffixe `Client` car `factures.ts` exportait déjà un `useCreateFacture` pour les
+  factures fournisseurs ; cf. ruling dans le ledger SDD) ; `telechargerFacturePdf`,
   `PdfFactureData` (Task 3).
 
 Refactor ciblé au passage : `genererPdf` construit déjà tout le mapping
@@ -1486,7 +1493,7 @@ Remplacer par :
 
 ```typescript
 import { telechargerDevisPdf, telechargerFacturePdf, type PdfFactureData } from "@/lib/pdf";
-import { useCreateFacture, useFactureParDevis } from "@/lib/queries/factures";
+import { useCreateFactureClient, useFactureParDevis } from "@/lib/queries/factures";
 ```
 
 (Pas besoin d'importer `Link` : la ligne 1 de ce fichier l'importe déjà depuis
@@ -1495,7 +1502,7 @@ import { useCreateFacture, useFactureParDevis } from "@/lib/queries/factures";
 
 - [ ] **Étape 2 : ajouter les hooks AVANT les retours conditionnels du composant**
 
-`useCreateFacture`/`useFactureParDevis` sont des hooks (pas de simples fonctions comme
+`useCreateFactureClient`/`useFactureParDevis` sont des hooks (pas de simples fonctions comme
 `genererPdf`) : les placer après `if (isLoading) return` / `if (!d) return` violerait les
 Rules of Hooks (nombre de hooks différent selon que le devis est déjà chargé ou non — React
 plante ou avertit dès qu'un devis met un instant à charger). Ils doivent rejoindre les
@@ -1519,7 +1526,7 @@ Remplacer par :
   const { data: versions = [] } = useVersionsDevis(d?.numero);
   const nav = useNavigate();
   const [pdfLoading, setPdfLoading] = useState(false);
-  const facturer = useCreateFacture();
+  const facturer = useCreateFactureClient();
   const { data: factureExistante } = useFactureParDevis(d?.id);
 
   if (isLoading)
@@ -1772,7 +1779,7 @@ git commit -m "feat: bouton Facturer sur la fiche devis"
 |---|---|
 | `supabase/migrations/036_facturation_client.sql` | nouveau |
 | `src/lib/database.types.ts` | modifié (types générés à la main) |
-| `src/lib/queries/factures.ts` | nouveau |
+| `src/lib/queries/factures.ts` | modifié (existait déjà pour les factures fournisseurs ; nouveaux exports client suffixés `Client`) |
 | `src/lib/pdf.ts` | modifié (extension, pas de duplication) |
 | `src/components/ChantierBadges.tsx` | modifié |
 | `src/routes/factures.index.tsx` | nouveau |
