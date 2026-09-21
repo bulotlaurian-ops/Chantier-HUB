@@ -240,7 +240,7 @@ function PointageDialog({
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div>
+            <div className="min-w-0">
               <Label>Date</Label>
               <Input
                 type="date"
@@ -249,7 +249,7 @@ function PointageDialog({
                 className="mt-1 h-11 sm:h-9"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <Label>Heures travaillées</Label>
               <Input
                 type="number"
