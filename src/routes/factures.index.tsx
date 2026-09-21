@@ -18,6 +18,7 @@ import {
   type FactureEnrichieClient,
 } from "@/lib/queries/factures";
 import { telechargerFacturePdf, type PdfFactureData } from "@/lib/pdf";
+import { LOGOS_PAR_ENTITE as LOGOS } from "@/config/entreprise";
 
 export const Route = createFileRoute("/factures/")({ component: FacturesListe });
 
@@ -26,8 +27,6 @@ export const Route = createFileRoute("/factures/")({ component: FacturesListe })
 // contourner un décodeur PNG fragile pour jsPDF, cf. urlToDataUrl dans devis.$id.tsx.
 // Dupliqué ici car la liste n'a pas d'état de devis en mémoire pour appeler la même
 // fonction — même logique, fichier différent.
-const LOGOS: Record<string, string> = { PRO: "/logos/logo-pro.png" };
-
 async function urlToDataUrl(url: string): Promise<string> {
   const res = await fetch(url, { cache: "no-store" });
   const blob = await res.blob();

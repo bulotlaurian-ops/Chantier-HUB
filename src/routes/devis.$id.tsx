@@ -30,6 +30,8 @@ import {
 } from "@/lib/queries/devis";
 import { useConditionsPaiement } from "@/lib/queries/conditions";
 import { telechargerDevisPdf, telechargerFacturePdf, type PdfFactureData } from "@/lib/pdf";
+// Logos servis depuis public/logos/ (chargés par fetch → dataURL), définis dans la config.
+import { LOGOS_PAR_ENTITE as LOGOS } from "@/config/entreprise";
 import { useCreateFactureClient, useFactureParDevis } from "@/lib/queries/factures";
 import {
   ArrowLeft,
@@ -55,12 +57,6 @@ const STATUTS: { value: DevisRow["statut"]; label: string }[] = [
   { value: "refuse", label: "Refusé" },
   { value: "expire", label: "Expiré" },
 ];
-
-// Logos servis depuis public/logos/ (chargés par fetch → dataURL). Les coordonnées
-// tél/email/site par entité sont centralisées dans src/lib/pdf.ts.
-const LOGOS: Record<string, string> = {
-  PRO: "/logos/logo-pro.png",
-};
 
 // Repasse par un <canvas> pour ré-encoder en JPEG plutôt que de renvoyer le PNG
 // tel quel : le décodeur PNG interne de jsPDF est fragile (échoue sur des PNG

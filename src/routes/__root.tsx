@@ -14,6 +14,7 @@ import { AuthProvider } from "@/lib/auth";
 import { AuthGate } from "@/components/AuthGate";
 import { Toaster } from "@/components/ui/sonner";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import { APP } from "@/config/entreprise";
 
 import appCss from "../styles.css?url";
 
@@ -41,10 +42,10 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Chantier Hub — Gestion de chantier" },
+      { title: `${APP.nom} — Gestion de chantier` },
       { name: "description", content: "Gestion des devis et suivi de chantier en temps réel" },
-      { property: "og:title", content: "Chantier Hub — Gestion de chantier" },
-      { name: "twitter:title", content: "Chantier Hub — Gestion de chantier" },
+      { property: "og:title", content: `${APP.nom} — Gestion de chantier` },
+      { name: "twitter:title", content: `${APP.nom} — Gestion de chantier` },
       {
         property: "og:description",
         content: "Gestion des devis et suivi de chantier en temps réel",
@@ -56,15 +57,7 @@ export const Route = createRootRoute({
       { name: "twitter:card", content: "summary" },
       { property: "og:type", content: "website" },
     ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
-      },
-    ],
+    links: [{ rel: "stylesheet", href: appCss }],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -103,12 +96,18 @@ function RootComponent() {
 }
 
 // Routes publiques (sans authentification ni layout applicatif).
-const PUBLIC_ROUTES = ["/reset-password"];
+const PUBLIC_ROUTES = [
+  "/reset-password",
+  "/mentions-legales",
+  "/confidentialite",
+  "/cgu",
+  "/cookies",
+];
 
 function AppContent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  // /reset-password : page publique plein écran, hors AuthGate et hors sidebar.
+  // Pages publiques plein écran (réinitialisation, pages légales), hors AuthGate et sidebar.
   if (PUBLIC_ROUTES.includes(pathname)) {
     return <Outlet />;
   }

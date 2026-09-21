@@ -3,6 +3,7 @@ import autoTable from "jspdf-autotable";
 import type { RowInput } from "jspdf-autotable";
 import { formatMontant, formatDateLong } from "./format";
 import { CGV_PAR_CODE } from "./cgv";
+import { ENTREPRISE as SOCIETE, CONTACT_PAR_ENTITE as ENTITE_CONTACT } from "../config/entreprise";
 
 // =====================================================================
 // Génération PDF d'un devis — template unique paramétré par entité.
@@ -12,31 +13,9 @@ import { CGV_PAR_CODE } from "./cgv";
 // Le PDF MET EN FORME uniquement : aucun total n'est recalculé (données 005).
 // =====================================================================
 
-// Coordonnées de l'entreprise. `adresse` = pied de page uniquement (le
-// papier à en-tête n'affiche plus l'adresse en haut, cf. modèle papier).
-// ⚠️ IBAN à renseigner (n'est pas une donnée publique, en attente de l'entreprise).
-const SOCIETE = {
-  rue: "6B Chemin Vieux de Montolieu",
-  npaLocalite: "11310 SAINT-DENIS",
-  adresse: "6B Chemin Vieux de Montolieu — 11310 Saint-Denis",
-  siret: "753 992 163 00018",
-  iban: "IBAN A RENSEIGNER",
-  formeJuridique: "EURL au capital de 4 000 Euros",
-};
-
-// Coordonnées SPÉCIFIQUES par entité (tél / email / accroche). Le site n'existe pas
-// dans PdfDevisData → centralisé ici (données passées inchangées).
-const ENTITE_CONTACT: Record<
-  string,
-  { tel: string; email: string; site: string; tagline: string }
-> = {
-  PRO: {
-    tel: "06 11 30 50 13",
-    email: "pascalgasc@yahoo.fr",
-    site: "",
-    tagline: "Neuf & rénovation Isolation Peinture",
-  },
-};
+// Coordonnées de l'entreprise (SOCIETE) et contacts par entité (ENTITE_CONTACT) :
+// définis dans src/config/entreprise.ts, seul fichier à modifier pour un nouveau client.
+// Le pied de page n'affiche que l'adresse (le papier à en-tête ne la répète pas en haut).
 
 export interface PdfEntite {
   nom: string;
@@ -137,7 +116,7 @@ function drawFooter(doc: jsPDF, w: number, h: number, code: string): void {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...GREY);
-  const l1 = [SOCIETE.adresse, c && `T. ${c.tel}`, c?.email, c?.site]
+  const l1 = [SOCIETE.adressePied, c && `T. ${c.tel}`, c?.email, c?.site]
     .filter(Boolean)
     .join("   ·   ");
   const l2 = `${SOCIETE.formeJuridique}   ·   SIRET ${SOCIETE.siret}`;

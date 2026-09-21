@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useForceLightTheme } from "@/lib/theme";
+import { APP, MARQUE } from "@/config/entreprise";
 
 type Mode = "login" | "forgot" | "sent";
 
@@ -59,17 +61,13 @@ export function LoginScreen() {
       {/* Panneau gauche — anthracite, marque (masqué en mobile) */}
       <div className="relative hidden flex-col justify-between bg-slate-900 p-12 text-white lg:flex">
         <div className="text-2xl font-light tracking-tight">
-          Artisan Pro <span className="text-white/60">Group</span>
+          {MARQUE.nom} <span className="text-white/60">{MARQUE.suffixe}</span>
         </div>
         <div className="max-w-md">
-          <p className="text-3xl font-light leading-snug tracking-tight">
-            La gestion de vos devis et chantiers, du premier prix à la marge réelle.
-          </p>
-          <p className="mt-4 text-sm font-light text-white/50">
-            Rénovation · construction · extérieurs — Suisse romande.
-          </p>
+          <p className="text-3xl font-light leading-snug tracking-tight">{MARQUE.accroche}</p>
+          <p className="mt-4 text-sm font-light text-white/50">{MARQUE.sousTitre}</p>
         </div>
-        <div className="text-xs font-light text-white/40">© Chantier Hub</div>
+        <div className="text-xs font-light text-white/40">© {APP.nom}</div>
       </div>
 
       {/* Panneau droit — formulaire */}
@@ -78,7 +76,7 @@ export function LoginScreen() {
           {/* Marque mobile (le panneau gauche est masqué) */}
           <div className="mb-10 lg:hidden">
             <div className="text-xl font-light tracking-tight text-foreground">
-              Artisan Pro <span className="text-muted-foreground">Group</span>
+              {MARQUE.nom} <span className="text-muted-foreground">{MARQUE.suffixe}</span>
             </div>
           </div>
 
@@ -210,6 +208,27 @@ export function LoginScreen() {
               </button>
             </>
           )}
+
+          <nav className="mt-12 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <Link
+              to="/mentions-legales"
+              className="underline underline-offset-4 hover:text-foreground"
+            >
+              Mentions légales
+            </Link>
+            <Link
+              to="/confidentialite"
+              className="underline underline-offset-4 hover:text-foreground"
+            >
+              Confidentialité
+            </Link>
+            <Link to="/cgu" className="underline underline-offset-4 hover:text-foreground">
+              Conditions d'utilisation
+            </Link>
+            <Link to="/cookies" className="underline underline-offset-4 hover:text-foreground">
+              Cookies
+            </Link>
+          </nav>
         </div>
       </div>
     </div>

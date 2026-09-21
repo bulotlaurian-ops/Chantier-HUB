@@ -90,16 +90,15 @@ Elles sont toutes marquées d'un `⚠️ À PERSONNALISER` dans le code.
 
 | Quoi | Où |
 |---|---|
-| Raison sociale, adresse, numéro d'entreprise, **IBAN** | `src/lib/pdf.ts` → `SOCIETE` |
-| Téléphone, email, site par entité | `src/lib/pdf.ts` → `ENTITE_CONTACT` |
+| Raison sociale, adresse, SIRET, **IBAN**, contacts par entité, logo par entité, marque de la page de connexion, identité de l'éditeur et des hébergeurs (pages légales) | **`src/config/entreprise.ts`** (un seul fichier) |
 | **CGV** (texte de démonstration, aucune valeur juridique) | `src/lib/cgv.ts` |
 | Noms, codes et couleurs des entités | table `entites` (voir migration 005) |
-| Logos imprimés sur les devis | `public/logos/` (voir le README du dossier) |
+| Fichier du logo | `public/logos/` (voir le README du dossier) |
 
 Les entités sont **des lignes en base**, pas du code : renommez-les, réduisez-les à une
-seule ou ajoutez-en. Seuls trois endroits listent les codes en dur et sont à ajuster si
-vous changez `PRO` / `EXT` / `INT` : `src/lib/types.ts`, `src/lib/prestations-filtres.ts`
-et la table `LOGOS` de `src/routes/devis.$id.tsx`.
+seule ou ajoutez-en. Seuls deux endroits listent les codes en dur et sont à ajuster si
+vous changez `PRO` / `EXT` / `INT` : `src/lib/types.ts` et `src/lib/prestations-filtres.ts`
+(plus les clés de `CONTACT_PAR_ENTITE` et `LOGOS_PAR_ENTITE` dans la config).
 
 ---
 

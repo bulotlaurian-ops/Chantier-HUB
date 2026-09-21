@@ -14,6 +14,8 @@
 // le corps de section sur la ligne suivante. Le moteur PDF gère lui-même le
 // repli des paragraphes et la pagination.
 
+import { ENTREPRISE } from "../config/entreprise";
+
 function cgvGenerique(entite: string): string {
   return `1. CHAMP D'APPLICATION
 Les présentes conditions générales de vente (ci-après « CGV ») s'appliquent à toute prestation de travaux conclue entre ${entite} et le Client, professionnel ou particulier. Le fait de valider un devis, quel qu'en soit le mode (signature électronique ou manuscrite), vaut acceptation pleine et entière des présentes CGV. Toute condition contraire posée par le Client est inopposable à ${entite}, sauf acceptation expresse et écrite de sa part.
@@ -41,7 +43,7 @@ Les données personnelles communiquées par le Client sont traitées par ${entit
 Les présentes CGV sont soumises au droit français. En cas de litige, et à défaut de résolution amiable, les tribunaux du ressort du siège social de ${entite} sont seuls compétents, sous réserve des règles impératives de compétence applicables aux litiges de consommation.`;
 }
 
-export const CGV_PRO = cgvGenerique("GP RAVALEMENT");
+export const CGV_PRO = cgvGenerique(ENTREPRISE.nom.toUpperCase());
 
 export const CGV_PAR_CODE: Record<string, string> = {
   PRO: CGV_PRO,

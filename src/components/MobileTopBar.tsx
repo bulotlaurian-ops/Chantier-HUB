@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SidebarContent } from "@/components/AppSidebar";
+import { APP } from "@/config/entreprise";
 
 const TITRES: { prefix: string; label: string }[] = [
   { prefix: "/devis", label: "Devis" },
@@ -29,7 +30,7 @@ export function MobileTopBar() {
   return (
     <header className="md:hidden sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b border-sidebar-border bg-sidebar px-3 text-sidebar-foreground">
       <div className="shrink-0 text-base font-light tracking-tight">
-        Chantier <span className="text-sidebar-foreground/50">Hub</span>
+        {APP.prefixe} <span className="text-sidebar-foreground/50">{APP.suffixe}</span>
       </div>
       <div className="flex-1 truncate text-center text-sm font-medium">{titrePage(path)}</div>
       <div className="flex shrink-0 items-center gap-1">

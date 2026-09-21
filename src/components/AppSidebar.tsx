@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { APP } from "@/config/entreprise";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
@@ -67,7 +68,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
       <div className="px-5 py-5 flex items-center border-b border-sidebar-border">
         <div className="text-lg font-light tracking-tight">
-          Chantier <span className="text-sidebar-foreground/50">Hub</span>
+          {APP.prefixe} <span className="text-sidebar-foreground/50">{APP.suffixe}</span>
         </div>
       </div>
 
@@ -147,6 +148,28 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </button>
           <ThemeToggle variant="sidebar" />
         </div>
+        <nav className="flex flex-wrap gap-x-3 gap-y-1 px-3 pt-1 text-[11px] text-sidebar-foreground/50">
+          <Link
+            to="/mentions-legales"
+            onClick={onNavigate}
+            className="hover:text-sidebar-foreground"
+          >
+            Mentions légales
+          </Link>
+          <Link
+            to="/confidentialite"
+            onClick={onNavigate}
+            className="hover:text-sidebar-foreground"
+          >
+            Confidentialité
+          </Link>
+          <Link to="/cgu" onClick={onNavigate} className="hover:text-sidebar-foreground">
+            CGU
+          </Link>
+          <Link to="/cookies" onClick={onNavigate} className="hover:text-sidebar-foreground">
+            Cookies
+          </Link>
+        </nav>
       </div>
     </div>
   );
