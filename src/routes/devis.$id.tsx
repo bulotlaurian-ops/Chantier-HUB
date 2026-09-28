@@ -29,7 +29,20 @@ import {
   type DevisDetail,
 } from "@/lib/queries/devis";
 import { useConditionsPaiement } from "@/lib/queries/conditions";
-import { telechargerDevisPdf, telechargerFacturePdf, type PdfFactureData } from "@/lib/pdf";
+import {
+  buildDevisPdf,
+  telechargerDevisPdf,
+  telechargerFacturePdf,
+  type PdfFactureData,
+} from "@/lib/pdf";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 // Logos servis depuis public/logos/ (chargés par fetch → dataURL), définis dans la config.
 import { LOGOS_PAR_ENTITE as LOGOS } from "@/config/entreprise";
 import { useCreateFactureClient, useFactureParDevis } from "@/lib/queries/factures";
@@ -44,8 +57,9 @@ import {
   Copy,
   Layers,
   Receipt,
+  Mail,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/devis/$id")({ component: DevisDetail });
@@ -98,6 +112,77 @@ async function urlToDataUrl(url: string): Promise<string> {
   }
 }
 
+// Mapping DevisDetail → champs communs devis/facture (numéro, date, échéance,
+// référence devis d'origine EXCLUS : propres à chaque appelant). Partagé par le
+// téléchargement, l'envoi par mail et la facturation (résolution du logo unique).
+async function donneesPdfCommunes(d: DevisDetail) {
+  const code = d.entite?.code ?? "";
+  const logoUrl = LOGOS[code];
+  const logo = logoUrl
+    ? await urlToDataUrl(logoUrl).catch((e) => {
+        console.error("[pdf] logo non converti :", e);
+        return undefined;
+      })
+    : undefined;
+  const tauxAffiche =
+    d.total_ht > 0
+      ? Math.round((d.total_tva / d.total_ht) * 1000) / 10
+      : (d.lignes[0]?.taux_tva ?? 20);
+  return {
+    logo,
+    entite: { nom: d.entite?.nom ?? "", code, couleur: d.entite?.couleur ?? "#1F2937" },
+    client: {
+      nom: d.client?.nom ?? "",
+      adresse: d.client?.adresse,
+      ville: d.client?.ville,
+      telephone: d.client?.telephone,
+      email: d.client?.email,
+    },
+    lignes: d.lignes.map((l) => ({
+      libelle: l.libelle,
+      unite: l.unite,
+      quantite: l.quantite,
+      prix_unitaire_ht: l.prix_unitaire_ht,
+      remise_pct: l.remise_pct,
+      total_ht: l.total_ht,
+      est_titre: l.est_titre,
+      est_option: l.est_option,
+    })),
+    total_ht: d.total_ht,
+    total_tva: d.total_tva,
+    total_ttc: d.total_ttc,
+    arrondi: d.arrondi,
+    taux_tva: tauxAffiche,
+  };
+}
+
+async function donneesDevisPdf(d: DevisDetail) {
+  const { logo, ...commun } = await donneesPdfCommunes(d);
+  return {
+    logo,
+    data: {
+      ...commun,
+      numero: d.numero,
+      date_creation: d.date_creation,
+      objet: d.objet,
+      conditions_paiement: d.conditions_paiement,
+      notes: d.notes,
+    },
+  };
+}
+
+async function fichierPdfDevis(d: DevisDetail): Promise<File> {
+  const { data, logo } = await donneesDevisPdf(d);
+  const blob = buildDevisPdf(data, logo).output("blob");
+  return new File([blob], `Devis ${d.numero}.pdf`, { type: "application/pdf" });
+}
+
+// Refuse ce qui casserait l'URL mailto: (?, &, #, espaces).
+function emailClientValide(d: DevisDetail): string | null {
+  const brut = d.client?.email?.trim() ?? "";
+  return /^[^\s?&#@]+@[^\s?&#@]+\.[^\s?&#@]+$/.test(brut) ? brut : null;
+}
+
 function DevisDetail() {
   const { id } = Route.useParams();
   const { data: d, isLoading } = useDevis(id);
@@ -109,8 +194,27 @@ function DevisDetail() {
   const { data: versions = [] } = useVersionsDevis(d?.numero);
   const nav = useNavigate();
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfEnvoi, setPdfEnvoi] = useState<File | null>(null);
+  const [proposerEnvoye, setProposerEnvoye] = useState(false);
   const facturer = useCreateFactureClient();
   const { data: factureExistante } = useFactureParDevis(d?.id);
+
+  // PDF préparé d'avance : le menu de partage exige d'être ouvert dans le geste
+  // même du clic, sans attente (sinon iOS/Android le bloquent).
+  useEffect(() => {
+    if (!d) return;
+    let actif = true;
+    setPdfEnvoi(null);
+    fichierPdfDevis(d).then(
+      (f) => {
+        if (actif) setPdfEnvoi(f);
+      },
+      (e) => console.error("[pdf] préparation de l'envoi :", e),
+    );
+    return () => {
+      actif = false;
+    };
+  }, [d]);
 
   if (isLoading)
     return (
@@ -122,65 +226,11 @@ function DevisDetail() {
 
   const archived = !!d.archive_at;
 
-  // Mapping DevisDetail → champs communs devis/facture (numéro, date, échéance,
-  // référence devis d'origine EXCLUS : propres à chaque appelant). Partagé par
-  // genererPdf et facturerDevis pour ne pas dupliquer la résolution du logo.
-  const donneesPdfCommunes = async () => {
-    const code = d.entite?.code ?? "";
-    const logoUrl = LOGOS[code];
-    const logo = logoUrl
-      ? await urlToDataUrl(logoUrl).catch((e) => {
-          console.error("[pdf] logo non converti :", e);
-          return undefined;
-        })
-      : undefined;
-    const tauxAffiche =
-      d.total_ht > 0
-        ? Math.round((d.total_tva / d.total_ht) * 1000) / 10
-        : (d.lignes[0]?.taux_tva ?? 20);
-    return {
-      logo,
-      entite: { nom: d.entite?.nom ?? "", code, couleur: d.entite?.couleur ?? "#1F2937" },
-      client: {
-        nom: d.client?.nom ?? "",
-        adresse: d.client?.adresse,
-        ville: d.client?.ville,
-        telephone: d.client?.telephone,
-        email: d.client?.email,
-      },
-      lignes: d.lignes.map((l) => ({
-        libelle: l.libelle,
-        unite: l.unite,
-        quantite: l.quantite,
-        prix_unitaire_ht: l.prix_unitaire_ht,
-        remise_pct: l.remise_pct,
-        total_ht: l.total_ht,
-        est_titre: l.est_titre,
-        est_option: l.est_option,
-      })),
-      total_ht: d.total_ht,
-      total_tva: d.total_tva,
-      total_ttc: d.total_ttc,
-      arrondi: d.arrondi,
-      taux_tva: tauxAffiche,
-    };
-  };
-
   const genererPdf = async () => {
     setPdfLoading(true);
     try {
-      const { logo, ...commun } = await donneesPdfCommunes();
-      telechargerDevisPdf(
-        {
-          ...commun,
-          numero: d.numero,
-          date_creation: d.date_creation,
-          objet: d.objet,
-          conditions_paiement: d.conditions_paiement,
-          notes: d.notes,
-        },
-        logo,
-      );
+      const { data, logo } = await donneesDevisPdf(d);
+      telechargerDevisPdf(data, logo);
     } catch (e) {
       toast.error("Génération PDF impossible : " + (e as Error).message);
     } finally {
@@ -188,11 +238,46 @@ function DevisDetail() {
     }
   };
 
+  // Synchrone de bout en bout jusqu'à navigator.share (geste utilisateur conservé).
+  // Mobile/tablette : menu de partage, PDF joint ; le partage ne sait pas remplir le
+  // destinataire, d'où la copie de l'email client. Sinon (PC sans partage de
+  // fichiers) : PDF téléchargé + messagerie par défaut ouverte via mailto:.
+  const envoyerParMail = () => {
+    if (!pdfEnvoi) return;
+    const sujet = `Devis ${d.numero}${d.entite?.nom ? ` - ${d.entite.nom}` : ""}`;
+    const email = emailClientValide(d);
+    const aProposer = d.statut === "brouillon";
+
+    if (typeof navigator.canShare === "function" && navigator.canShare({ files: [pdfEnvoi] })) {
+      if (email) {
+        navigator.clipboard?.writeText(email).catch(() => {});
+        toast.success(`Email du client copié : colle-le dans « À »`);
+      }
+      navigator.share({ files: [pdfEnvoi], title: sujet }).then(
+        () => aProposer && setProposerEnvoye(true),
+        (e: Error) => {
+          if (e.name !== "AbortError") toast.error("Partage impossible : " + e.message);
+        },
+      );
+      return;
+    }
+
+    const url = URL.createObjectURL(pdfEnvoi);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = pdfEnvoi.name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    window.location.href = `mailto:${email ?? ""}?subject=${encodeURIComponent(sujet)}`;
+    toast.success("PDF téléchargé : joins-le au mail qui vient de s'ouvrir.");
+    if (aProposer) setProposerEnvoye(true);
+  };
+
   const facturerDevis = async () => {
     setPdfLoading(true);
     try {
       const f = await facturer.mutateAsync(d);
-      const { logo, ...commun } = await donneesPdfCommunes();
+      const { logo, ...commun } = await donneesPdfCommunes(d);
       const data: PdfFactureData = {
         ...commun,
         numero: f.numero,
@@ -261,6 +346,16 @@ function DevisDetail() {
               )}
               Télécharger le PDF
             </Button>
+            {!archived && (
+              <Button variant="outline" onClick={envoyerParMail} disabled={!pdfEnvoi}>
+                {pdfEnvoi ? (
+                  <Mail className="w-4 h-4 mr-1" />
+                ) : (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                )}
+                Envoyer par mail
+              </Button>
+            )}
             {!archived && d.statut === "accepte" && !factureExistante && (
               <Button
                 variant="outline"
@@ -420,6 +515,36 @@ function DevisDetail() {
           )}
         </div>
       )}
+
+      {/* Au retour de la messagerie : on ne peut pas savoir si le mail est vraiment
+          parti, donc on propose (un devis envoyé n'est plus modifiable). */}
+      <Dialog open={proposerEnvoye} onOpenChange={setProposerEnvoye}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Le devis est parti ?</DialogTitle>
+            <DialogDescription>
+              Si le mail a bien été envoyé, passe le devis en « Envoyé ». Il ne sera plus
+              modifiable, mais tu pourras toujours en créer une nouvelle version.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setProposerEnvoye(false)}>
+              Pas encore
+            </Button>
+            <Button
+              onClick={() => {
+                updateStatut.mutate(
+                  { id: d.id, statut: "envoye" },
+                  { onSuccess: () => toast.success("Devis marqué comme envoyé") },
+                );
+                setProposerEnvoye(false);
+              }}
+            >
+              Marquer comme envoyé
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <EditionDevis devis={d} readOnly={d.statut !== "brouillon"} />
 
