@@ -200,9 +200,10 @@ function DevisDetail() {
   const { data: factureExistante } = useFactureParDevis(d?.id);
 
   // PDF préparé d'avance : le menu de partage exige d'être ouvert dans le geste
-  // même du clic, sans attente (sinon iOS/Android le bloquent).
+  // même du clic, sans attente (sinon iOS/Android le bloquent). Écrans tactiles
+  // uniquement, comme le bouton « Envoyer par mail ».
   useEffect(() => {
-    if (!d) return;
+    if (!d || !window.matchMedia("(pointer: coarse)").matches) return;
     let actif = true;
     setPdfEnvoi(null);
     fichierPdfDevis(d).then(
@@ -240,8 +241,8 @@ function DevisDetail() {
 
   // Synchrone de bout en bout jusqu'à navigator.share (geste utilisateur conservé).
   // Mobile/tablette : menu de partage, PDF joint ; le partage ne sait pas remplir le
-  // destinataire, d'où la copie de l'email client. Sinon (PC sans partage de
-  // fichiers) : PDF téléchargé + messagerie par défaut ouverte via mailto:.
+  // destinataire, d'où la copie de l'email client. Sinon (navigateur sans partage de
+  // fichiers, ou page en HTTP) : PDF téléchargé + messagerie ouverte via mailto:.
   const envoyerParMail = () => {
     if (!pdfEnvoi) return;
     const sujet = `Devis ${d.numero}${d.entite?.nom ? ` - ${d.entite.nom}` : ""}`;
@@ -347,7 +348,12 @@ function DevisDetail() {
               Télécharger le PDF
             </Button>
             {!archived && (
-              <Button variant="outline" onClick={envoyerParMail} disabled={!pdfEnvoi}>
+              <Button
+                variant="outline"
+                onClick={envoyerParMail}
+                disabled={!pdfEnvoi}
+                className="hidden pointer-coarse:inline-flex"
+              >
                 {pdfEnvoi ? (
                   <Mail className="w-4 h-4 mr-1" />
                 ) : (
