@@ -88,6 +88,12 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        {/* `npm run dev:essai` (.env.essai.local) : rappel permanent qu'on n'est pas en prod. */}
+        {import.meta.env.MODE === "essai" && (
+          <div className="fixed top-0 inset-x-0 z-[100] bg-orange-500 text-white text-xs font-semibold text-center py-0.5 pointer-events-none">
+            BASE DE TEST, aucune donnée réelle
+          </div>
+        )}
         <AppContent />
         <Toaster richColors position="bottom-right" />
       </AuthProvider>
