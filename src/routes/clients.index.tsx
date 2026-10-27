@@ -41,6 +41,12 @@ import {
   ecrireBrouillon,
   effacerBrouillon,
 } from "@/lib/brouillon";
+import {
+  TYPE_CLIENT_LABEL,
+  normaliserSiren,
+  sirenValide,
+  type TypeClient,
+} from "@/lib/facturation-electronique";
 
 export const Route = createFileRoute("/clients/")({ component: ClientsPage });
 
@@ -333,6 +339,10 @@ interface BrouillonClient {
   chNom: string;
   chVille: string;
   chAdresse: string;
+  // Optionnels : absents des brouillons enregistrés avant la migration 038.
+  typeClient?: TypeClient;
+  siren?: string;
+  raisonSociale?: string;
 }
 
 export function NewClientDialog({
@@ -361,6 +371,10 @@ export function NewClientDialog({
   const [adresse, setAdresse] = useState("");
   const [ville, setVille] = useState("");
   const [categorieId, setCategorieId] = useState("");
+  // Facture électronique (038) : un pro porte un SIREN, imprimé sur ses factures.
+  const [typeClient, setTypeClient] = useState<TypeClient>("particulier");
+  const [siren, setSiren] = useState("");
+  const [raisonSociale, setRaisonSociale] = useState("");
   // Premier chantier — obligatoire à la création (retour client) ; d'autres
   // chantiers peuvent ensuite être ajoutés depuis la fiche client.
   const [chEntiteId, setChEntiteId] = useState("");
@@ -378,6 +392,9 @@ export function NewClientDialog({
       setAdresse(client.adresse ?? "");
       setVille(client.ville ?? "");
       setCategorieId(client.categorie_tarifaire_id ?? "");
+      setTypeClient(client.type_client);
+      setSiren(client.siren ?? "");
+      setRaisonSociale(client.raison_sociale ?? "");
     } else {
       // Reprend le brouillon local s'il existe, sinon champs vierges.
       const b = lireBrouillon<BrouillonClient>(CLE_BROUILLON_CLIENT);
@@ -387,6 +404,9 @@ export function NewClientDialog({
       setAdresse(b?.adresse ?? "");
       setVille(b?.ville ?? "");
       setCategorieId(b?.categorieId ?? "");
+      setTypeClient(b?.typeClient ?? "particulier");
+      setSiren(b?.siren ?? "");
+      setRaisonSociale(b?.raisonSociale ?? "");
       setChEntiteId(b?.chEntiteId ?? "");
       setChNom(b?.chNom ?? "");
       setChVille(b?.chVille ?? "");
@@ -418,6 +438,9 @@ export function NewClientDialog({
       chNom,
       chVille,
       chAdresse,
+      typeClient,
+      siren,
+      raisonSociale,
     } satisfies BrouillonClient);
   }, [
     open,
@@ -428,6 +451,9 @@ export function NewClientDialog({
     adresse,
     ville,
     categorieId,
+    typeClient,
+    siren,
+    raisonSociale,
     chEntiteId,
     chNom,
     chVille,
@@ -450,6 +476,16 @@ export function NewClientDialog({
         return;
       }
     }
+    const sirenNet = normaliserSiren(siren);
+    const estPro = typeClient === "professionnel";
+    if (estPro && !sirenNet) {
+      toast.error("SIREN requis pour un client professionnel");
+      return;
+    }
+    if (estPro && !sirenValide(sirenNet)) {
+      toast.error("SIREN invalide : 9 chiffres, vérifie la saisie");
+      return;
+    }
     const champs = {
       nom: nom.trim(),
       categorie_tarifaire_id: categorieId || null,
@@ -457,6 +493,10 @@ export function NewClientDialog({
       telephone: tel.trim() || null,
       ville: ville.trim() || null,
       adresse: adresse.trim() || null,
+      type_client: typeClient,
+      // Un particulier ne garde pas de SIREN résiduel (cohérence des factures).
+      siren: estPro ? sirenNet : null,
+      raison_sociale: estPro ? raisonSociale.trim() || null : null,
     };
     try {
       if (isEdit && client) {
@@ -490,6 +530,9 @@ export function NewClientDialog({
         setAdresse("");
         setVille("");
         setCategorieId("");
+        setTypeClient("particulier");
+        setSiren("");
+        setRaisonSociale("");
         setChEntiteId("");
         setChNom("");
         setChVille("");
@@ -523,6 +566,47 @@ export function NewClientDialog({
               autoFocus
             />
           </div>
+          <div className="col-span-2">
+            <Label>Type de client</Label>
+            <Select value={typeClient} onValueChange={(v) => setTypeClient(v as TypeClient)}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(TYPE_CLIENT_LABEL) as TypeClient[]).map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {TYPE_CLIENT_LABEL[t]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="mt-1 text-xs text-muted-foreground">
+              SCI, syndic, bailleur, mairie = professionnel.
+            </p>
+          </div>
+          {typeClient === "professionnel" && (
+            <>
+              <div>
+                <Label>SIREN</Label>
+                <Input
+                  value={siren}
+                  onChange={(e) => setSiren(e.target.value)}
+                  placeholder="123 456 789"
+                  inputMode="numeric"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Raison sociale</Label>
+                <Input
+                  value={raisonSociale}
+                  onChange={(e) => setRaisonSociale(e.target.value)}
+                  placeholder="Si différente du nom"
+                  className="mt-1"
+                />
+              </div>
+            </>
+          )}
           <div className="col-span-2">
             <Label>Catégorie tarifaire</Label>
             <Select value={categorieId} onValueChange={setCategorieId}>

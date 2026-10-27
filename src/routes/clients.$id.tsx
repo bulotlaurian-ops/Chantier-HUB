@@ -35,7 +35,9 @@ import {
   ecrireBrouillon,
   effacerBrouillon,
 } from "@/lib/brouillon";
+import { TYPE_CLIENT_LABEL, formatSiren } from "@/lib/facturation-electronique";
 import {
+  Building2,
   FileText,
   FileImage,
   FileSpreadsheet,
@@ -211,8 +213,19 @@ function ClientFiche() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <CategorieChip libelle={c.categorie?.libelle} />
+                <span className="text-xs rounded-full border px-2 py-0.5 text-muted-foreground">
+                  {TYPE_CLIENT_LABEL[c.type_client]}
+                </span>
               </div>
               <div className="text-xs text-muted-foreground space-y-1 mt-2">
+                {c.type_client === "professionnel" && (
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-3 h-3" />
+                    {[c.raison_sociale, c.siren && `SIREN ${formatSiren(c.siren)}`]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <MapPin className="w-3 h-3" />
                   {c.adresse}, {c.ville}
