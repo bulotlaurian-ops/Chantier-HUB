@@ -4,6 +4,7 @@ import type { Tables, TablesInsert } from "@/lib/database.types";
 import type { DevisDetail } from "@/lib/queries/devis";
 import { todayIso } from "@/lib/devis-utils";
 import { addDays } from "@/lib/format";
+import type { CategorieOperation } from "@/lib/facturation-electronique";
 
 export type FactureRow = Tables<"factures_fournisseurs">;
 export type RepartitionRow = Tables<"factures_repartition">;
@@ -458,12 +459,42 @@ export async function fetchFactureDetail(id: string): Promise<FactureDetail> {
   return f;
 }
 
+// Adresse du chantier, à imprimer seulement si elle diffère de celle du client
+// (mention obligatoire de la réforme facture électronique, 038).
+export function adresseChantierDistincte(src: DevisDetail): string | null {
+  const joindre = (a?: string | null, v?: string | null) =>
+    [a, v]
+      .map((x) => x?.trim())
+      .filter(Boolean)
+      .join(", ");
+  const chantier = joindre(src.chantier?.adresse, src.chantier?.ville);
+  const client = joindre(src.client?.adresse, src.client?.ville);
+  if (!chantier || !src.chantier?.adresse?.trim()) return null;
+  return chantier.toLowerCase() === client.toLowerCase() ? null : chantier;
+}
+
+export interface OptionsFacture {
+  categorie_operation: CategorieOperation;
+  // Sous-traitance BTP entre pros : TVA à 0, due par le preneur.
+  autoliquidation: boolean;
+}
+
 // Crée la facture (+ copie figée des lignes) depuis un devis accepté. Le devis n'est
-// jamais modifié par cette opération.
+// jamais modifié par cette opération. Les mentions de la réforme (type de client,
+// SIREN, catégorie, adresse chantier, TVA sur les débits) sont figées ici, comme les lignes.
 export function useCreateFactureClient() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (src: DevisDetail): Promise<FactureRowClient> => {
+    mutationFn: async ({
+      src,
+      options,
+    }: {
+      src: DevisDetail;
+      options: OptionsFacture;
+    }): Promise<FactureRowClient> => {
+      const client = src.client;
+      const estPro = client?.type_client === "professionnel";
+      const autoliq = options.autoliquidation && estPro;
       const { data: numero, error: e0 } = await supabase.rpc("generer_numero_facture");
       if (e0) throw e0;
       const insert: TablesInsert<"factures"> = {
@@ -473,9 +504,17 @@ export function useCreateFactureClient() {
         client_id: src.client_id,
         date_echeance: addDays(todayIso(), DELAI_ECHEANCE_JOURS),
         total_ht: src.total_ht,
-        total_tva: src.total_tva,
-        total_ttc: src.total_ttc,
-        arrondi: src.arrondi,
+        // Autoliquidation : aucune TVA facturée, le TTC est le HT (pas d'arrondi).
+        total_tva: autoliq ? 0 : src.total_tva,
+        total_ttc: autoliq ? src.total_ht : src.total_ttc,
+        arrondi: autoliq ? 0 : src.arrondi,
+        client_type: client?.type_client ?? "particulier",
+        client_siren: estPro ? client?.siren : null,
+        client_raison_sociale: estPro ? client?.raison_sociale : null,
+        categorie_operation: options.categorie_operation,
+        adresse_chantier: adresseChantierDistincte(src),
+        autoliquidation: autoliq,
+        tva_sur_debits: src.entite?.tva_sur_debits ?? false,
       };
       const { data: f, error } = await supabase.from("factures").insert(insert).select().single();
       if (error) throw error;
@@ -488,7 +527,7 @@ export function useCreateFactureClient() {
           quantite: l.quantite,
           prix_unitaire_ht: l.prix_unitaire_ht,
           remise_pct: l.remise_pct,
-          taux_tva: l.taux_tva,
+          taux_tva: autoliq ? 0 : l.taux_tva,
           total_ht: l.total_ht,
           est_option: l.est_option,
           est_titre: l.est_titre,
@@ -498,7 +537,7 @@ export function useCreateFactureClient() {
       }
       return f;
     },
-    onSuccess: (_f, src) => {
+    onSuccess: (_f, { src }) => {
       qc.invalidateQueries({ queryKey: KEY_CLIENT });
       qc.invalidateQueries({ queryKey: [...KEY_CLIENT, "par-devis", src.id] });
     },

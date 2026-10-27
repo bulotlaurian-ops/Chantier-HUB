@@ -2,7 +2,8 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { useEntites } from "@/lib/queries/entites";
+import { useEntites, useUpdateTvaSurDebits } from "@/lib/queries/entites";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/lib/auth";
 import { PageHeader } from "@/components/Badges";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,6 +75,36 @@ const TVA_RATES = [
   { label: "Exonéré", value: 0, usage: "Export, prestations exclues" },
 ];
 
+// Option fiscale de l'entreprise : si elle a opté pour la TVA d'après les débits,
+// la mention devient obligatoire sur ses factures (réforme facture électronique).
+function TvaSurDebitsSwitch({ entiteId, active }: { entiteId: string; active: boolean }) {
+  const update = useUpdateTvaSurDebits();
+  return (
+    <label className="mt-4 flex items-start gap-3 rounded-md border p-3 cursor-pointer">
+      <Switch
+        checked={active}
+        disabled={update.isPending}
+        onCheckedChange={(v) =>
+          update.mutate(
+            { id: entiteId, tva_sur_debits: v },
+            {
+              onSuccess: () => toast.success(v ? "TVA sur les débits activée" : "Option retirée"),
+              onError: (e) => toast.error("Enregistrement impossible : " + e.message),
+            },
+          )
+        }
+      />
+      <span>
+        <span className="text-sm font-medium block">Option TVA sur les débits</span>
+        <span className="text-xs text-muted-foreground">
+          À activer seulement si l'entreprise a opté pour ce régime auprès des impôts (à vérifier
+          avec le comptable). La mention sera imprimée sur les nouvelles factures.
+        </span>
+      </span>
+    </label>
+  );
+}
+
 function Parametres() {
   const { data: entites = [] } = useEntites();
   return (
@@ -125,6 +156,7 @@ function Parametres() {
                   <code>src/lib/pdf.ts</code> (imprimés sur les devis PDF). Leur édition depuis cet
                   écran n'est pas encore disponible.
                 </p>
+                <TvaSurDebitsSwitch entiteId={e.id} active={e.tva_sur_debits} />
               </CardContent>
             </Card>
           ))}

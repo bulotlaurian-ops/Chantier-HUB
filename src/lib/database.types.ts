@@ -148,7 +148,10 @@ export type Database = {
           email: string | null;
           id: string;
           nom: string;
+          raison_sociale: string | null;
+          siren: string | null;
           telephone: string | null;
+          type_client: Database["public"]["Enums"]["type_client"];
           ville: string | null;
         };
         Insert: {
@@ -159,7 +162,10 @@ export type Database = {
           email?: string | null;
           id?: string;
           nom: string;
+          raison_sociale?: string | null;
+          siren?: string | null;
           telephone?: string | null;
+          type_client?: Database["public"]["Enums"]["type_client"];
           ville?: string | null;
         };
         Update: {
@@ -170,7 +176,10 @@ export type Database = {
           email?: string | null;
           id?: string;
           nom?: string;
+          raison_sociale?: string | null;
+          siren?: string | null;
           telephone?: string | null;
+          type_client?: Database["public"]["Enums"]["type_client"];
           ville?: string | null;
         };
         Relationships: [
@@ -393,6 +402,7 @@ export type Database = {
           mentions_legales: string | null;
           nom: string;
           prefixe_nomenclature: string | null;
+          tva_sur_debits: boolean;
           validite_devis_jours: number;
         };
         Insert: {
@@ -406,6 +416,7 @@ export type Database = {
           mentions_legales?: string | null;
           nom: string;
           prefixe_nomenclature?: string | null;
+          tva_sur_debits?: boolean;
           validite_devis_jours?: number;
         };
         Update: {
@@ -419,14 +430,21 @@ export type Database = {
           mentions_legales?: string | null;
           nom?: string;
           prefixe_nomenclature?: string | null;
+          tva_sur_debits?: boolean;
           validite_devis_jours?: number;
         };
         Relationships: [];
       };
       factures: {
         Row: {
+          adresse_chantier: string | null;
           arrondi: number;
+          autoliquidation: boolean;
+          categorie_operation: Database["public"]["Enums"]["categorie_operation"] | null;
           client_id: string;
+          client_raison_sociale: string | null;
+          client_siren: string | null;
+          client_type: Database["public"]["Enums"]["type_client"] | null;
           created_at: string;
           created_by: string | null;
           date_echeance: string;
@@ -440,10 +458,17 @@ export type Database = {
           total_ht: number;
           total_ttc: number;
           total_tva: number;
+          tva_sur_debits: boolean;
         };
         Insert: {
+          adresse_chantier?: string | null;
           arrondi?: number;
+          autoliquidation?: boolean;
+          categorie_operation?: Database["public"]["Enums"]["categorie_operation"] | null;
           client_id: string;
+          client_raison_sociale?: string | null;
+          client_siren?: string | null;
+          client_type?: Database["public"]["Enums"]["type_client"] | null;
           created_at?: string;
           created_by?: string | null;
           date_echeance: string;
@@ -457,10 +482,17 @@ export type Database = {
           total_ht: number;
           total_ttc: number;
           total_tva: number;
+          tva_sur_debits?: boolean;
         };
         Update: {
+          adresse_chantier?: string | null;
           arrondi?: number;
+          autoliquidation?: boolean;
+          categorie_operation?: Database["public"]["Enums"]["categorie_operation"] | null;
           client_id?: string;
+          client_raison_sociale?: string | null;
+          client_siren?: string | null;
+          client_type?: Database["public"]["Enums"]["type_client"] | null;
           created_at?: string;
           created_by?: string | null;
           date_echeance?: string;
@@ -474,6 +506,7 @@ export type Database = {
           total_ht?: number;
           total_ttc?: number;
           total_tva?: number;
+          tva_sur_debits?: boolean;
         };
         Relationships: [
           {
@@ -1276,6 +1309,7 @@ export type Database = {
       user_a_acces_entite: { Args: { p_entite: string }; Returns: boolean };
     };
     Enums: {
+      categorie_operation: "biens" | "services" | "mixte";
       categorie_type: "client" | "nature_projet";
       fg_mode: "pourcentage" | "fixe" | "coefficient";
       mode_tarif: "remise_pct" | "coefficient" | "prix_absolu";
@@ -1285,6 +1319,7 @@ export type Database = {
       statut_facture: "a_valider" | "valide";
       statut_facture_client: "emise" | "payee";
       statut_validation: "pending" | "valide" | "rejete";
+      type_client: "particulier" | "professionnel";
       type_tva: "standard" | "reduit" | "hebergement" | "exonere";
       unite: "m2" | "ml" | "pce" | "u" | "fft" | "h" | "forfait";
     };
@@ -1412,6 +1447,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      categorie_operation: ["biens", "services", "mixte"],
       categorie_type: ["client", "nature_projet"],
       fg_mode: ["pourcentage", "fixe", "coefficient"],
       mode_tarif: ["remise_pct", "coefficient", "prix_absolu"],
@@ -1421,6 +1457,7 @@ export const Constants = {
       statut_facture: ["a_valider", "valide"],
       statut_facture_client: ["emise", "payee"],
       statut_validation: ["pending", "valide", "rejete"],
+      type_client: ["particulier", "professionnel"],
       type_tva: ["standard", "reduit", "hebergement", "exonere"],
       unite: ["m2", "ml", "pce", "u", "fft", "h", "forfait"],
     },

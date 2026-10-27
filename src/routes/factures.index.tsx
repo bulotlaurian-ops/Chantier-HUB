@@ -18,6 +18,7 @@ import {
   type FactureEnrichieClient,
 } from "@/lib/queries/factures";
 import { telechargerFacturePdf, type PdfFactureData } from "@/lib/pdf";
+import { mentionsPdfFacture } from "@/lib/facturation-electronique";
 import { LOGOS_PAR_ENTITE as LOGOS } from "@/config/entreprise";
 
 export const Route = createFileRoute("/factures/")({ component: FacturesListe });
@@ -96,7 +97,9 @@ function FacturesListe() {
         detail.total_ht > 0
           ? Math.round((detail.total_tva / detail.total_ht) * 1000) / 10
           : (detail.lignes[0]?.taux_tva ?? 20);
+      const { client: clientFige, ...mentions } = mentionsPdfFacture(detail);
       const data: PdfFactureData = {
+        ...mentions,
         numero: detail.numero,
         date_creation: detail.date_emission,
         dateEcheance: detail.date_echeance,
@@ -113,6 +116,7 @@ function FacturesListe() {
           ville: detail.client?.ville,
           telephone: detail.client?.telephone,
           email: detail.client?.email,
+          ...clientFige,
         },
         lignes: detail.lignes.map((l) => ({
           libelle: l.libelle,

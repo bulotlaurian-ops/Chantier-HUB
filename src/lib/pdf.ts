@@ -4,6 +4,11 @@ import type { RowInput } from "jspdf-autotable";
 import { formatMontant, formatDateLong } from "./format";
 import { CGV_PAR_CODE } from "./cgv";
 import { ENTREPRISE as SOCIETE, CONTACT_PAR_ENTITE as ENTITE_CONTACT } from "../config/entreprise";
+import {
+  MENTION_AUTOLIQUIDATION,
+  MENTION_TVA_DEBITS,
+  formatSiren,
+} from "./facturation-electronique";
 
 // =====================================================================
 // Génération PDF d'un devis — template unique paramétré par entité.
@@ -32,6 +37,9 @@ export interface PdfClient {
   pays?: string | null;
   telephone?: string | null;
   email?: string | null;
+  // Client professionnel (038) : mention SIREN obligatoire sur ses factures.
+  siren?: string | null;
+  raisonSociale?: string | null;
 }
 export interface PdfLigne {
   libelle: string;
@@ -62,6 +70,11 @@ export interface PdfDevisData {
   dateEcheance?: string | null; // ajoute une ligne "Échéance" dans l'encart Date/Objet
   devisReference?: string | null; // numéro du devis d'origine, ligne dédiée dans l'encart
   mentionsFacture?: boolean; // ajoute les mentions légales pénalités de retard / 40 €
+  // Mentions de la réforme facture électronique (038), figées sur la facture :
+  categorieOperation?: string | null; // libellé : « Prestation de services »…
+  adresseChantier?: string | null; // seulement si différente de l'adresse client
+  autoliquidation?: boolean; // TVA 0, due par le preneur (sous-traitance BTP)
+  tvaSurDebits?: boolean;
 }
 
 type RGB = [number, number, number];
@@ -249,6 +262,9 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
     clientBoxW = 76,
     clientLineH = 5;
   const clientLines: { text: string; bold?: boolean }[] = [{ text: d.client.nom, bold: true }];
+  const raisonSociale = d.client.raisonSociale?.trim();
+  if (raisonSociale && raisonSociale !== d.client.nom) clientLines.push({ text: raisonSociale });
+  if (d.client.siren) clientLines.push({ text: `SIREN : ${formatSiren(d.client.siren)}` });
   const adresseComplete = [d.client.adresse, d.client.ville].filter(Boolean).join(", ");
   if (adresseComplete) clientLines.push({ text: `Adresse : ${adresseComplete}` });
   if (d.client.telephone) clientLines.push({ text: `Tél : ${d.client.telephone}` });
@@ -275,6 +291,8 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
   if (d.dateEcheance) refRows.push(["Échéance", formatDateLong(d.dateEcheance)]);
   if (d.devisReference) refRows.push(["Devis d'origine", d.devisReference]);
   if (d.objet?.trim()) refRows.push(["Objet", d.objet.trim()]);
+  if (d.categorieOperation) refRows.push(["Opération", d.categorieOperation]);
+  if (d.adresseChantier) refRows.push(["Lieu des travaux", d.adresseChantier]);
   const rowH = 7;
   doc.setDrawColor(...LINE);
   doc.setLineWidth(0.2);
@@ -449,14 +467,17 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
   };
   doc.setFontSize(10);
   rec("Total HT", formatMontant(d.total_ht));
-  rec(`Taux de TVA (${d.taux_tva}%)`, formatMontant(d.total_tva));
+  if (d.autoliquidation) rec("TVA autoliquidée", formatMontant(0));
+  else rec(`Taux de TVA (${d.taux_tva}%)`, formatMontant(d.total_tva));
   if (Math.abs(d.arrondi) > 0.0001) rec("Arrondi", formatMontant(d.arrondi));
   doc.setDrawColor(...LINE);
   doc.setLineWidth(0.3);
   doc.line(labelX, y - 3, valX, y - 3);
   y += 4;
   doc.setFontSize(11.5);
-  rec("Total TTC net à payer", formatMontant(d.total_ttc), true, [cr, cg, cb]);
+  // Autoliquidation : pas de TVA facturée, parler de « TTC » serait trompeur.
+  const libelleTotal = d.autoliquidation ? "Total net à payer" : "Total TTC net à payer";
+  rec(libelleTotal, formatMontant(d.total_ttc), true, [cr, cg, cb]);
 
   // Notes et remarques (optionnel)
   let bx = y + 6;
@@ -529,6 +550,21 @@ export function buildDevisPdf(d: PdfDevisData, logoDataUrl?: string): jsPDF {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
     doc.setTextColor(...GREY);
+    const mentionsFiscales = [
+      d.autoliquidation && MENTION_AUTOLIQUIDATION,
+      d.tvaSurDebits && MENTION_TVA_DEBITS,
+    ].filter(Boolean) as string[];
+    if (mentionsFiscales.length) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(...DARK);
+      const lignesFiscales = doc.splitTextToSize(mentionsFiscales.join(" "), w - 28) as string[];
+      doc.text(lignesFiscales, 14, my);
+      my += lignesFiscales.length * 3.6 + 2;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(...GREY);
+    }
     const mentionsLegales = doc.splitTextToSize(
       "En cas de retard de paiement, une pénalité égale à trois fois le taux d'intérêt " +
         "légal sera exigible, ainsi qu'une indemnité forfaitaire pour frais de " +

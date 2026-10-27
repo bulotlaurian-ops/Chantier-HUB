@@ -14,7 +14,13 @@ export type DevisEnrichi = DevisRow & {
 export type DevisDetail = DevisRow & {
   client: (Tables<"clients"> & { categorie: { libelle: string } | null }) | null;
   entite: Tables<"entites"> | null;
-  chantier: { id: string; reference: string; nom: string } | null;
+  chantier: {
+    id: string;
+    reference: string;
+    nom: string;
+    adresse: string | null;
+    ville: string | null;
+  } | null;
   lignes: LigneDevisRow[];
 };
 
@@ -22,7 +28,7 @@ const KEY = ["devis"] as const;
 const LIST_SELECT =
   "*, client:clients(id, nom, categorie:categories_tarifaires(libelle, code)), entite:entites(id, nom, couleur, code), chantier:chantiers(id, reference, nom)";
 const DETAIL_SELECT =
-  "*, client:clients(*, categorie:categories_tarifaires(libelle)), entite:entites(*), chantier:chantiers(id, reference, nom), lignes:lignes_devis(*)";
+  "*, client:clients(*, categorie:categories_tarifaires(libelle)), entite:entites(*), chantier:chantiers(id, reference, nom, adresse, ville), lignes:lignes_devis(*)";
 
 export function useDevisList(includeArchived = false) {
   return useQuery({
