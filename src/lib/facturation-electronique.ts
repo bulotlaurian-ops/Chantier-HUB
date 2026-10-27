@@ -1,4 +1,4 @@
-import type { Database } from "./database.types";
+import type { Database, Tables } from "./database.types";
 
 // =====================================================================
 // Réforme facture électronique (migration 038) — règles partagées.
@@ -52,4 +52,18 @@ export function sirenValide(siren: string): boolean {
 
 export function formatSiren(siren: string): string {
   return siren.replace(/^(\d{3})(\d{3})(\d{3})$/, "$1 $2 $3");
+}
+
+// Mentions à imprimer, lues sur la facture FIGÉE (jamais sur la fiche client
+// actuelle). Une facture émise avant 038 a ces colonnes à null : rien n'est ajouté.
+export function mentionsPdfFacture(f: Tables<"factures">) {
+  return {
+    categorieOperation: f.categorie_operation
+      ? CATEGORIE_OPERATION_LABEL[f.categorie_operation]
+      : null,
+    adresseChantier: f.adresse_chantier,
+    autoliquidation: f.autoliquidation,
+    tvaSurDebits: f.tva_sur_debits,
+    client: { siren: f.client_siren, raisonSociale: f.client_raison_sociale },
+  };
 }

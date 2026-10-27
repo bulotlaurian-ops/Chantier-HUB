@@ -45,7 +45,13 @@ import {
 } from "@/components/ui/dialog";
 // Logos servis depuis public/logos/ (chargés par fetch → dataURL), définis dans la config.
 import { LOGOS_PAR_ENTITE as LOGOS } from "@/config/entreprise";
-import { useCreateFactureClient, useFactureParDevis } from "@/lib/queries/factures";
+import {
+  useCreateFactureClient,
+  useFactureParDevis,
+  type OptionsFacture,
+} from "@/lib/queries/factures";
+import { FacturerDialog } from "@/components/FacturerDialog";
+import { mentionsPdfFacture } from "@/lib/facturation-electronique";
 import {
   ArrowLeft,
   Loader2,
@@ -274,13 +280,21 @@ function DevisDetail() {
     if (aProposer) setProposerEnvoye(true);
   };
 
-  const facturerDevis = async () => {
+  const facturerDevis = async (options: OptionsFacture) => {
     setPdfLoading(true);
     try {
-      const f = await facturer.mutateAsync(d);
+      const f = await facturer.mutateAsync({ src: d, options });
       const { logo, ...commun } = await donneesPdfCommunes(d);
+      const { client: clientFige, ...mentions } = mentionsPdfFacture(f);
       const data: PdfFactureData = {
         ...commun,
+        ...mentions,
+        client: { ...commun.client, ...clientFige },
+        // Totaux et taux lus sur la facture : l'autoliquidation les met à 0.
+        total_tva: f.total_tva,
+        total_ttc: f.total_ttc,
+        arrondi: f.arrondi,
+        taux_tva: f.autoliquidation ? 0 : commun.taux_tva,
         numero: f.numero,
         date_creation: f.date_emission,
         objet: d.objet,
@@ -363,18 +377,21 @@ function DevisDetail() {
               </Button>
             )}
             {!archived && d.statut === "accepte" && !factureExistante && (
-              <Button
-                variant="outline"
-                onClick={facturerDevis}
-                disabled={pdfLoading || facturer.isPending}
-              >
-                {facturer.isPending ? (
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                ) : (
-                  <Receipt className="w-4 h-4 mr-1" />
-                )}
-                Facturer
-              </Button>
+              <FacturerDialog
+                devis={d}
+                pending={pdfLoading || facturer.isPending}
+                onConfirm={facturerDevis}
+                trigger={
+                  <Button variant="outline" disabled={pdfLoading || facturer.isPending}>
+                    {facturer.isPending ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
+                      <Receipt className="w-4 h-4 mr-1" />
+                    )}
+                    Facturer
+                  </Button>
+                }
+              />
             )}
             {factureExistante && (
               <Link
