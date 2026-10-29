@@ -31,7 +31,6 @@ import {
   ChevronUp,
   ChevronDown,
   Library,
-  Mic,
 } from "lucide-react";
 import {
   DndContext,
@@ -163,7 +162,6 @@ function NouveauDevis() {
   );
   const [mobileImport, setMobileImport] = useState(false);
   const [mobileBiblio, setMobileBiblio] = useState(false); // tiroir "Depuis la bibliothèque" (mobile)
-  const [mobileDictee, setMobileDictee] = useState(false); // tiroir "Dicter le devis" (mobile) — sur demande
   const [editUid, setEditUid] = useState<number | null>(null); // ligne en édition (mini-dialog mobile)
   const [ajoutBiblio, setAjoutBiblio] = useState<AjoutBiblioDefaults | null>(null); // ligne → ajout biblio
   const uidRef = useRef(1);
@@ -362,12 +360,6 @@ function NouveauDevis() {
   const ajouterLigneMobile = () => {
     const uid = uidRef.current; // = uid de la ligne qui va être ajoutée
     ajouterLigneLibre();
-    setEditUid(uid);
-  };
-
-  const ajouterTitreMobile = () => {
-    const uid = uidRef.current;
-    ajouterTitre();
     setEditUid(uid);
   };
 
@@ -1090,20 +1082,20 @@ function NouveauDevis() {
               </button>
             </div>
 
-            {/* Bibliothèque en direct — dictée disponible sur demande, pas par défaut */}
+            {/* Bibliothèque en direct (pas de dictée ni de catégorie sur mobile) */}
             {lignes.length === 0 && (
               <div className="pt-2 space-y-3">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <Label className="text-xs">Depuis la bibliothèque</Label>
-                    <div className="flex gap-2 shrink-0">
-                      <Button variant="outline" size="sm" onClick={ajouterTitreMobile}>
-                        Catégorie
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={ajouterLigneMobile}>
-                        Ligne libre
-                      </Button>
-                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={ajouterLigneMobile}
+                    >
+                      Ligne libre
+                    </Button>
                   </div>
                   <PrestationPicker
                     prestations={prestations}
@@ -1112,15 +1104,6 @@ function NouveauDevis() {
                   />
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
-                  {!isOuvrier && (
-                    <button
-                      onClick={() => setMobileDictee(true)}
-                      className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline underline-offset-2"
-                    >
-                      <Mic className="w-3.5 h-3.5" />
-                      Dicter le devis (IA)
-                    </button>
-                  )}
                   <button
                     onClick={() => setMobileImport((v) => !v)}
                     className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
@@ -1254,15 +1237,7 @@ function NouveauDevis() {
             {/* Barre d'action fixe : Ajouter une ligne (au-dessus) + Générer le devis */}
             {lignes.length > 0 && (
               <div className="fixed bottom-0 left-0 right-0 z-20 border-t bg-background p-3 space-y-2">
-                <div className={`grid gap-2 ${isOuvrier ? "grid-cols-3" : "grid-cols-4"}`}>
-                  <Button
-                    variant="outline"
-                    className="h-11 px-1 text-xs"
-                    onClick={ajouterTitreMobile}
-                  >
-                    <Plus className="w-4 h-4 mr-1 shrink-0" />
-                    Catégorie
-                  </Button>
+                <div className="grid grid-cols-2 gap-2">
                   <Button
                     variant="outline"
                     className="h-11 px-1 text-xs"
@@ -1271,16 +1246,6 @@ function NouveauDevis() {
                     <Plus className="w-4 h-4 mr-1 shrink-0" />
                     Ligne
                   </Button>
-                  {!isOuvrier && (
-                    <Button
-                      variant="outline"
-                      className="h-11 px-1 text-xs"
-                      onClick={() => setMobileDictee(true)}
-                    >
-                      <Mic className="w-4 h-4 mr-1 shrink-0" />
-                      Dicter
-                    </Button>
-                  )}
                   <Button
                     variant="outline"
                     className="h-11 px-1 text-xs"
@@ -1340,36 +1305,6 @@ function NouveauDevis() {
                 entitePreselection={null}
                 onChoisir={choisirPrestationMobile}
               />
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        {/* Tiroir "Dicter le devis" — sur demande uniquement, ne s'ouvre plus par défaut. */}
-        <Sheet open={mobileDictee} onOpenChange={setMobileDictee}>
-          <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>{isEdit ? "Modifier à la voix" : "Dicter le devis"}</SheetTitle>
-            </SheetHeader>
-            <div className="mt-3">
-              {!isOuvrier && (
-                <DevisIA
-                  mode={isEdit ? "edition" : "creation"}
-                  contexte={contexteIA}
-                  prestations={prestations}
-                  categorieId={categorieId}
-                  tvaCourants={tvaCourants}
-                  tauxStandard={tauxStandard}
-                  pret={!!entiteId && !!clientId}
-                  onInserer={(champs) => {
-                    insererLignesIA(champs);
-                    setMobileDictee(false);
-                  }}
-                  onAppliquer={(ops) => {
-                    appliquerOpsIA(ops);
-                    setMobileDictee(false);
-                  }}
-                />
-              )}
             </div>
           </SheetContent>
         </Sheet>
